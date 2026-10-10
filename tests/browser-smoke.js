@@ -96,6 +96,44 @@ function loadPlaywright() {
     errors.push(...state.errors.map((e) => tag + ' engine: ' + e));
     await page.close();
   }
+  // Presidential scenario: start as a sitting senator and run for the White House.
+  async function runPres(viewport, tag) {
+    const page = await browser.newPage({ viewport });
+    page.on('pageerror', (e) => errors.push(tag + ' pageerror: ' + e.message));
+    page.on('console', (m) => { if (m.type() === 'error') errors.push(tag + ' console: ' + m.text()); });
+    await page.goto('file://' + path.join(__dirname, '..', 'index.html'));
+    await page.evaluate(() => {
+      const s = PG.game.newGame({ seed: 'pres-smoke', name: 'Dana Whitfield', party: 'R', background: 'veteran', traits: ['charismatic', 'rainmaker'], homeState: 'OH', age: 52, startYear: 2027 });
+      s.player.history.push({ officeId: 'us_senate', start: { year: 2021, month: 1 }, end: { year: 2027, month: 1 } });
+      PG.ui.game = s; PG.ui.view = 'game'; PG.ui.tab = 'career'; PG.ui.render();
+    });
+    await page.locator('tr:has-text("President of the United States") button:has-text("Run")').click();
+    await page.click('.actionbar button:has-text("Skip to campaign")').catch(() => {});
+    let shotN = 0, generalShot = false;
+    for (let i = 0; i < 40; i++) {
+      for (let k = 0; k < 6; k++) {
+        if (await page.locator('.overlay.night').count()) {
+          if (shotN < 3) await page.screenshot({ path: path.join(outDir, tag + '-night-' + (shotN++) + '.png'), fullPage: true });
+          await page.click('text=Skip to final results').catch(() => {});
+          if (await page.locator('.overlay.night h2:has-text("President of the United States")').count()) await page.screenshot({ path: path.join(outDir, tag + '-night-general.png'), fullPage: true });
+          await page.click('.overlay.night button:has-text("Continue")');
+          continue;
+        }
+        if (await page.locator('.overlay .choice').count()) { await page.locator('.overlay .choice:not([disabled])').first().click(); continue; }
+        break;
+      }
+      const ph = await page.evaluate(() => ({ phase: PG.ui.game.phase, stage: PG.ui.game.campaign && PG.ui.game.campaign.stage }));
+      if (!ph.stage) break;
+      const map = page.locator('.nav button:has-text("Map")');
+      if (await map.count()) { await map.click(); if (i === 3 || (ph.stage === 'general' && !generalShot)) { await page.screenshot({ path: path.join(outDir, tag + '-map-' + ph.stage + '.png'), fullPage: true }); if (ph.stage === 'general') generalShot = true; } }
+      await page.click('.nav button:has-text("Campaign")');
+      if (ph.stage === 'general') { for (const st of ['PA', 'MI', 'WI']) { const b = page.locator('button[data-arg="' + st + '"]'); if (await b.count()) await b.click(); } await page.click('text=Save focus'); }
+      const btn = page.locator('.actionbar button.primary').first();
+      if (!(await btn.isDisabled())) await btn.click();
+    }
+    await page.close();
+  }
+  await runPres({ width: 1360, height: 900 }, 'pres');
   await run({ width: 1360, height: 900 }, 'desktop');
   await run({ width: 390, height: 844 }, 'phone');
   await browser.close();

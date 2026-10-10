@@ -13,7 +13,6 @@
 
   ui.screens.campaign = function (g) {
     const c = g.campaign;
-    if (c.officeId === 'president' && ui.screens.presCampaign) return ui.screens.presCampaign(g);
     const o = PG.data.officeById[c.officeId];
     const pc = PG.campaign.playerCand(g);
     const d = planDraft(g);
@@ -32,6 +31,7 @@
     });
     let h = '<div class="row between"><h1>' + esc(o.name) + ' campaign</h1><span class="chip">' + esc(ui.stageName(c.stage)) + (stageDate ? ' · ' + esc(U.fmtDate(stageDate)) : '') + '</span></div>';
     h += '<p class="muted">' + esc(PG.juris.describe(g, c.key)) + ' · lean ' + U.fmtLean(PG.campaign.electorate(g).lean) + ' · ' + (o.partisan ? 'partisan' : 'nonpartisan') + (o.seats > 1 ? ' · ' + o.seats + ' seats (top ' + o.seats + ' win)' : '') + ' · typical winning budget ' + U.fmtMoney(T) + '</p>';
+    if (c.pres) h += ui.screens.presPanel(g);
     if (c.ballot) h += '<div class="card ' + (c.ballot.collected < c.ballot.required ? 'alert' : '') + '"><b>Ballot access:</b> ' + c.ballot.collected.toLocaleString() + ' / ' + c.ballot.required.toLocaleString() + ' valid signatures (due ' + U.fmtDate(c.info.filingDeadline) + '). Ground-organizing days and field spending collect signatures.</div>';
     // Schedule
     h += '<div class="card"><div class="row between"><h2>This month\'s schedule</h2><b id="daysUsed"></b></div><p class="small muted">You have ' + days + ' campaign days' + (g.player.office ? ' (official duties take the rest)' : '') + '. Overwork builds fatigue, which raises gaffe risk and dulls your charisma.</p><div class="grid g2">';

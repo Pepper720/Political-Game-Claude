@@ -119,7 +119,6 @@
     }
     if (st.unicameral && officeId === 'state_house') reasons.push('Nebraska has a one-house (unicameral) legislature — run for the Legislature (state senate) instead.');
     if (!p.history.length && o.rank > 1) reasons.push('Every career starts in local office: run for school board or city council first.');
-    if (officeId === 'president' && !PG.presidential) reasons.push('Presidential campaigns are not available in this build.');
     if (o.naturalBorn && !p.naturalBorn) reasons.push('Only natural-born citizens may serve as President.');
     const info = fixedInfo || PG.calendar.nextElection(state, officeId);
     if (!info) reasons.push('No upcoming election you can still file for.');

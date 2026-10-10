@@ -46,6 +46,7 @@
     const p = state.player;
     if (state.campaign) PG.campaign.processMonth(state);
     if (state.gov) PG.gov.monthly(state, !!state.campaign);
+    if (PG.courts) PG.courts.monthly(state);
     PG.economy.monthly(state);
     aiExecutives(state);
     PG.world.updateEnvironment(state);
@@ -326,6 +327,8 @@
         case 'gov.nominate': return PG.executive.nominate(state, a.pos, a.nominee);
         case 'gov.fire': return PG.executive.fire(state, a.pos);
         case 'gov.address': return PG.executive.address(state);
+        case 'gov.caseDefend': return PG.courts.defend(state, a.id);
+        case 'gov.caseSettle': return PG.courts.settle(state, a.id);
         case 'gov.judge': return PG.courts.nominateJudge(state, a.seat, a.nominee);
         case 'gov.decide':
           if (a.choice === 'retire') return retire(state);

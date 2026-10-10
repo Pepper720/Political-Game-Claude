@@ -16,6 +16,7 @@
     clearInterval(ui.nightTimer);
     ui.nightStep = 0;
     const n = ui.game.electionNight;
+    if (!n.steps) return;
     ui.nightTimer = setInterval(() => {
       if (!ui.game || !ui.game.electionNight) { clearInterval(ui.nightTimer); return; }
       if (ui.nightStep >= n.steps.length - 1) { clearInterval(ui.nightTimer); return; }
@@ -31,6 +32,8 @@
 
   ui.screens.night = function (g) {
     const n = g.electionNight;
+    if (n.kind === 'pres_primary') return ui.screens.presPrimaryNight(g);
+    if (n.kind === 'pres_general') return ui.screens.presGeneralNight(g);
     const k = Math.min(ui.nightStep, n.steps.length - 1);
     const step = n.steps[k];
     const final = k === n.steps.length - 1;

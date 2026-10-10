@@ -13,6 +13,7 @@
     const ctx = { env: state.world.national.environment, nat: o.nationalization, noiseKey: state.campaign.id + stage };
     if (!o.partisan) { ctx.mode = 'nonpartisan'; ctx.partisanW = 0.4; ctx.kind = yearKind === 'pres' ? 'pres' : yearKind === 'mid' ? 'mid' : 'off'; }
     else if ((stage === 'primary') && (st.primary === 'top2' || st.primary === 'top4')) { ctx.mode = 'general'; ctx.partisanW = 1; ctx.kind = 'primary'; ctx.T = 36; }
+    else if (stage === 'pres_primary') { ctx.mode = 'primary'; ctx.party = party; ctx.kind = 'primary'; ctx.primaryType = 'semi'; ctx.T = 24; }
     else if (stage === 'primary' || stage === 'runoff') {
       ctx.mode = 'primary'; ctx.party = party; ctx.kind = stage === 'runoff' ? 'runoff' : 'primary';
       ctx.primaryType = st.primary === 'closed' ? 'closed' : st.primary === 'semi' ? 'semi' : 'open';
@@ -35,7 +36,7 @@
   function preview(state) {
     const c = state.campaign;
     const stage = c.stage;
-    const party = stage === 'primary' || stage === 'runoff' ? state.player.party : null;
+    const party = stage === 'primary' || stage === 'runoff' || stage === 'pres_primary' ? state.player.party : null;
     const ctx = ctxFor(state, stage, party);
     const cands = ctx.mode === 'primary' ? candsFor(state, stage, party) : candsFor(state, stage);
     return PG.voters.computeVote(PG.campaign.electorate(state), cands, ctx);

@@ -206,6 +206,7 @@
     if (stage === 'primary') return info.primary;
     if (stage === 'runoff') return info.runoff;
     if (stage === 'general') return info.general;
+    if (stage === 'pres_primary') { const y = state.campaign.pres ? state.campaign.pres.year : info.general.year; const m = state.date.year === y ? Math.min(6, Math.max(1, state.date.month)) : 1; return { year: y, month: m }; }
     if (stage === 'general_runoff') return info.generalRunoff || { year: info.general.year, month: 12 };
     return info.general;
   }
@@ -672,7 +673,6 @@
 
   function processMonth(state) {
     const c = state.campaign;
-    if (c.officeId === 'president') { PG.presidential.processMonth(state); return; }
     c.months++;
     const lines = playerMonth(state);
     oppoResearch(state);
@@ -700,6 +700,7 @@
       endCampaign(state, false, 'Failed to qualify for the ballot.');
       return;
     }
+    if (c.officeId === 'president') { PG.presidential.afterMonth(state); return; }
     if (d && U.dateCmp(state.date, d) >= 0) PG.election.runStage(state);
   }
 
@@ -725,6 +726,6 @@
   PG.campaign = {
     DAY_KEYS, DAY_LABELS, start, playerCand, opponents, stageCands, electorate, defaultPlan, setPlan, rollout, commissionPoll, seekEndorsement,
     pledgeNoPAC, releaseOppo, makePoll, processMonth, endCampaign, primaryThreat, daysAvailable, stageDate, makeCandidate, makePlayerCand,
-    targetBlocs, applyAds, endorse, endorsementScore, leaderId, holdDebate, sizeFactor,
+    playerMonth, opponentMonth, targetBlocs, applyAds, endorse, endorsementScore, leaderId, holdDebate, sizeFactor,
   };
 })(globalThis.PG = globalThis.PG || {});

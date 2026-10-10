@@ -43,6 +43,13 @@
         { label: 'Stand by them', hint: 'Loyalty earns loyalty — unless it\'s true', chance: { p: 0.45, success: { outcome: 'The allegations fell apart under scrutiny.', approval: { base: 0.5 } }, fail: { scandal: { severity: 4.5, text: 'Cover-up allegations in your administration' }, fireCabinet: true, outcome: 'The allegations were true, and you defended them.' } } },
       ] },
 
+    { id: 'vp_vetting', echoOnly: true, title: 'Your running mate\'s past',
+      text: 'Reporters found something your vetting team missed: {vp} failed to disclose a lucrative consulting contract with a foreign-owned company.',
+      choices: [
+        { label: 'Stand by your running mate', hint: 'Loyal; the story lingers', effects: { fav: -2, scandal: { severity: 2.5, text: 'Running mate\'s undisclosed contract' } } },
+        { label: 'Have them apologize and release records', hint: 'Contained, mostly', effects: { fav: -1, media: 1 } },
+        { label: 'Replace them on the ticket', hint: 'Decisive — and chaotic', effects: { fav: -2.5, momentum: -2, media: 2 } },
+      ] },
     // ------------------------------------------------------------- campaign
     { id: 'controversial_endorser', when: { phase: C, weight: 1 }, title: 'An endorsement you didn\'t ask for',
       text: 'A polarizing media personality with a huge following among your party\'s base has endorsed you and wants to hold a joint rally.',

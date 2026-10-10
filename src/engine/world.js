@@ -262,7 +262,48 @@
     return (ch.majority === 'D' ? 'Democratic' : 'Republican') + ' majority ' + Math.max(ch.counts.D, ch.counts.R) + '–' + Math.min(ch.counts.D, ch.counts.R);
   }
 
+  /* After each census, the home state redraws its maps. Whoever controls the process
+   * (one-party trifecta, commission, or divided government/courts) shapes the lines.
+   * Members keep their seats; their districts' leans change. */
+  function redistrict(state) {
+    const st = PG.data.stateById[state.player.homeState];
+    state.world.lastRedistrict = state.date.year;
+    if (st.isDC) return;
+    let control = state.world.redistrictingOverride || st.redistricting;
+    if (control !== 'commission') {
+      const leg = [state.world.chambers.state_house, state.world.chambers.state_senate].filter(Boolean);
+      const gov = state.world.executives.governor;
+      const parties = leg.map((c) => c.majority).concat(gov ? [gov.party] : []);
+      control = parties.every((p) => p === parties[0]) ? parties[0] : 'split';
+    }
+    const causes = ['Map-drawing control: ' + ({ R: 'Republican trifecta', D: 'Democratic trifecta', commission: 'independent commission', split: 'divided government — courts and compromise' }[control] || control)];
+    const shift = (chId, n) => {
+      const ch = state.world.chambers[chId];
+      if (!ch) return;
+      const idx = ch.members.map((m, i) => i).filter((i) => ch.members[i].state === st.id);
+      const leans = districtLeans(state, st, idx.length, control);
+      const order = idx.slice().sort((a, b) => ch.members[a].lean - ch.members[b].lean);
+      order.forEach((i, k) => {
+        const m = ch.members[i];
+        const before = m.lean;
+        m.lean = leans[k];
+        if (m.isPlayer) causes.push('Your ' + ch.name + ' district moved from ' + U.fmtLean(before) + ' to ' + U.fmtLean(m.lean) + '.');
+      });
+      void n;
+    };
+    shift('state_house'); shift('state_senate'); shift('us_house');
+    ['sh', 'ss', 'cd'].forEach((k) => PG.juris.invalidate(state, k));
+    if (state.gov && ['sh', 'ss', 'cd'].includes(state.gov.key)) {
+      const e = PG.juris.electorate(state, state.gov.key);
+      for (const b of e.blocs) if (state.gov.approval.byBloc[b.id] === undefined) state.gov.approval.byBloc[b.id] = 50;
+      PG.approval.recompute(state);
+    }
+    PG.game.log(state, 'world', 'Redistricting: ' + st.name + ' adopted new maps after the ' + (state.date.year - 2) + ' census.', causes);
+    PG.game.news(state, st.name + ' unveils new political maps', 0);
+  }
+
   PG.world = {
+    redistrict,
     personName, cityName, districtLeans, genMember, makeChamber, setLeadership, assignCommittees, createWorld,
     updateEnvironment, seatIndexFor, nearestIndex, createExecutive, moderateIdeology, chamberControlSummary, committeeKey,
   };

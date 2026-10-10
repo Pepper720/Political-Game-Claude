@@ -59,7 +59,7 @@
     parts.spending = -Math.abs(st.spendChange * 100 - idealSpend) * 0.14;
     parts.taxes = -Math.abs(st.taxChange * 100 - idealTax) * 0.2;
     if (ch.partisan && proposerParty) parts.party = (m.party === proposerParty ? 1 : -0.6) * m.loyalty * (ch.level === 'federal' ? 1 : 0.8);
-    parts.mustPass = 0.9;
+    parts.mustPass = 0.55;
     if (!st.balancedOk) parts.balanced = -3;
     if (state.gov.budgetEarmarks && state.gov.budgetEarmarks[m.id]) parts.earmark = 1.2;
     parts.personal = PG.rng.hashNormal('budget' + state.date.year + m.id) * 0.3;

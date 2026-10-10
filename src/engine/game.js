@@ -59,6 +59,7 @@
     }
     state.date = U.addMonths(state.date, 1);
     state.stats.months++;
+    if (state.date.month === 1 && state.date.year % 10 === 2 && state.world.lastRedistrict !== state.date.year) PG.world.redistrict(state);
     transitions(state);
     if (state.phase !== 'gameover') PG.events.roll(state);
     return { ok: true };
@@ -310,6 +311,7 @@
         case 'gov.public': return PG.leg.goPublic(state, a.billId);
         case 'gov.stance': return PG.leg.setStance(state, a.billId, a.stance);
         case 'gov.vote': return PG.leg.castVote(state, a.billId, a.v);
+        case 'gov.reconcile': return PG.leg.requestReconciliation(state, a.billId);
         case 'gov.discharge': return PG.leg.discharge(state, a.billId);
         case 'gov.bury': return PG.leg.bury(state, a.billId);
         case 'gov.sign': return PG.leg.sign(state, a.billId);

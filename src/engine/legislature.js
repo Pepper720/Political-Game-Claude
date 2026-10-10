@@ -376,8 +376,40 @@
     return ok || R.chance(state, (bill.floorPush || 0) * 0.25);
   }
 
+  function fiscalYear(state) {
+    const fy = PG.calendar.fyStart(state.gov.level, PG.juris.homeState(state));
+    return state.date.month >= fy ? state.date.year + 1 : state.date.year;
+  }
+
+  // Budget reconciliation: one budgetary vehicle per fiscal year may bypass the filibuster.
+  function maybeReconcile(state, bill, ch) {
+    if (!ch.rules.cloture || bill.reconciliation || !law(bill).budgetary) return;
+    const g = state.gov;
+    if (g.reconUsed === fiscalYear(state)) return;
+    const wantsIt = bill.reconRequested || (bill.sponsorParty && bill.sponsorParty === ch.majority && R.chance(state, 0.5));
+    if (!wantsIt) return;
+    bill.reconciliation = true;
+    g.reconUsed = fiscalYear(state);
+    hist(state, bill, 'Moved under budget reconciliation: only a simple majority is needed in the Senate (Byrd rule limits it to budgetary provisions).');
+  }
+
+  function requestReconciliation(state, billId) {
+    const bill = state.gov.bills.find((b) => b.id === billId);
+    if (!bill) return { ok: false, msg: 'No such bill.' };
+    if (!law(bill).budgetary) return { ok: false, msg: 'Only budgetary measures (taxes and spending) qualify under the Byrd rule.' };
+    if (state.gov.level !== 'federal') return { ok: false, msg: 'Reconciliation is a congressional procedure.' };
+    if (state.gov.reconUsed === fiscalYear(state)) return { ok: false, msg: 'This fiscal year\'s reconciliation vehicle has already been used.' };
+    const sen = chamber(state, 'us_senate');
+    if (state.player.party !== sen.majority) return { ok: false, msg: 'Only the Senate majority can set up a reconciliation bill.' };
+    if (state.player.capital < 6) return { ok: false, msg: 'Costs 6 political capital.' };
+    state.player.capital -= 6;
+    bill.reconRequested = true;
+    return { ok: true, msg: 'Leadership agreed to use this fiscal year\'s reconciliation instructions for the ' + bill.title + '.' };
+  }
+
   function holdFloorVote(state, bill, chId) {
     const ch = chamber(state, chId);
+    maybeReconcile(state, bill, ch);
     if (isPlayerChamber(state, chId) && !bill.playerVote) bill.playerVote = partyPosition(state, bill.level, state.player.party, bill) >= 0 ? 'Y' : 'N';
     if (ch.rules.cloture && !bill.reconciliation) {
       const c = vote(state, chId, bill, 'cloture');
@@ -427,7 +459,7 @@
     if (ex.isPlayer) {
       state.gov.desk = state.gov.desk || [];
       state.gov.desk.push(bill.id);
-      PG.game.log(state, 'legislation', 'The ' + bill.title + ' passed the legislature and awaits your signature or veto.');
+      PG.game.log(state, 'legislation', '"' + bill.title + '" passed the legislature and awaits your signature or veto.');
     }
   }
 
@@ -480,7 +512,7 @@
         state.gov.defections = (state.gov.defections || 0) + 1;
       } else if (pos) state.player.partyRel = U.clamp(state.player.partyRel + 0.5, 0, 100);
       state.gov.voteRecord.push({ date: { ...state.date }, bill: bill.title, vote: bill.playerVote, partyLine: pos ? (pos > 0) === yes : null });
-      if (lines.length) PG.game.log(state, 'vote', 'You voted ' + (yes ? 'YES' : 'NO') + ' on the ' + lw.name + '.', lines);
+      if (lines.length) PG.game.log(state, 'vote', 'You voted ' + (yes ? 'YES' : 'NO') + ' on "' + lw.name + '".', lines);
     }
   }
 
@@ -510,6 +542,7 @@
       state.player.legacy.laws.push({ name: lw.name, scope: bill.scope, date: { ...state.date }, level: g.level });
       state.player.capital += 3;
     }
+    if (lw.id === 'independent_redistricting' && g.level === 'state') state.world.redistrictingOverride = 'commission';
     PG.game.log(state, 'legislation', 'ENACTED: ' + lw.name + ' (' + PG.data.scopes[bill.scope - 1].name + '). ' + how, causes);
     PG.game.news(state, lw.name + ' becomes law', 0);
     if (PG.courts) PG.courts.maybeChallenge(state, { type: 'law', id: bill.id, lawId: lw.id, name: lw.name, ideo: L(bill), vuln: (lw.legal && lw.legal.vuln) || 0.05, grounds: lw.legal && lw.legal.grounds, tags: lw.tags, level: g.level });
@@ -518,7 +551,7 @@
 
   function logBill(state, bill, what, v) {
     const mine = bill.sponsorId === 'player' || bill.sponsorId === 'exec' || bill.playerStance;
-    PG.game.log(state, 'legislation', 'The ' + bill.title + ' ' + what + ' (' + v.yea + '–' + v.nay + ').', v.reasons);
+    PG.game.log(state, 'legislation', '"' + bill.title + '" ' + what + ' (' + v.yea + '–' + v.nay + ').', v.reasons);
     if (mine && bill.playerStance > 0) state.player.capital = Math.max(0, state.player.capital - 2);
   }
 
@@ -650,6 +683,6 @@
 
   PG.leg = {
     law, chamber, member, memberScore, partyPosition, whipCount, vote, newBill, introduce, aiBills, monthly, activeBills, execFor,
-    whip, deal, seekCosponsors, pushBill, goPublic, setStance, castVote, discharge, bury, sign, veto, findMember, enact, isPlayerChamber, threshold, L,
+    requestReconciliation, fiscalYear, whip, deal, seekCosponsors, pushBill, goPublic, setStance, castVote, discharge, bury, sign, veto, findMember, enact, isPlayerChamber, threshold, L,
   };
 })(globalThis.PG = globalThis.PG || {});

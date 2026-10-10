@@ -75,7 +75,10 @@
     }
     const anchor = primary || general;
     const filingDeadline = o.id === 'president' ? { year: year - 1, month: 11 } : U.addMonths(anchor, primary ? -3 : -3);
-    const campaignStart = U.addMonths(general, -o.campaignMonths);
+    // Campaigns launch before the filing deadline (and at least 4 months before a primary).
+    let campaignStart = U.addMonths(general, -o.campaignMonths);
+    const latest = U.addMonths(filingDeadline, -1);
+    if (U.dateCmp(latest, campaignStart) < 0) campaignStart = latest;
     const classUp = o.electionYears === 'senate' ? senateClassUp(st, year) : null;
     return { officeId, year, general, primary, runoff, generalRunoff, filingDeadline, campaignStart, senateClass: classUp,
       termStart: { year: year + 1, month: 1 }, termYears: termLength(officeId, st) };

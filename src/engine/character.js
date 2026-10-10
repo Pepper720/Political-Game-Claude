@@ -109,7 +109,7 @@
   }
 
   /* Can the player run for this office now? Returns { ok, reasons[], info, warnings[] }. */
-  function eligibility(state, officeId) {
+  function eligibility(state, officeId, fixedInfo) {
     const o = office(officeId);
     const st = PG.data.stateById[state.player.homeState];
     const reasons = [], warnings = [];
@@ -119,8 +119,9 @@
     }
     if (st.unicameral && officeId === 'state_house') reasons.push('Nebraska has a one-house (unicameral) legislature — run for the Legislature (state senate) instead.');
     if (!p.history.length && o.rank > 1) reasons.push('Every career starts in local office: run for school board or city council first.');
+    if (officeId === 'president' && !PG.presidential) reasons.push('Presidential campaigns are not available in this build.');
     if (o.naturalBorn && !p.naturalBorn) reasons.push('Only natural-born citizens may serve as President.');
-    const info = PG.calendar.nextElection(state, officeId);
+    const info = fixedInfo || PG.calendar.nextElection(state, officeId);
     if (!info) reasons.push('No upcoming election you can still file for.');
     if (info) {
       const age = ageAt(state, info.termStart);

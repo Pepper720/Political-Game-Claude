@@ -249,7 +249,7 @@
           shares = softmax(us, T);
         }
         candidates.forEach((c, i) => {
-          const mult = 1 + 0.008 * (c.ground || 0) + 0.006 * (c.enthusiasm || 0);
+          const mult = 1 + 0.004 * (c.ground || 0) + 0.004 * (c.enthusiasm || 0);
           const v = pop * shares[i] * mult;
           rv.votes[c.id] += v;
           res.votes[c.id] += v;

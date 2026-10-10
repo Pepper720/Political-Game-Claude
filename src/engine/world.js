@@ -207,7 +207,7 @@
     president.electedYear = lastPres; president.termNumber = R.chance(state, 0.6) ? 1 : 2;
     president.approval = U.round(R.range(state, 40, 50));
 
-    chambers.us_senate = makeChamber(state, { id: 'us_senate', name: 'U.S. Senate', level: 'federal', leans: usSenateLeans(), tieBreakParty: presParty, rules: { cloture: 60, override: 2 / 3 } });
+    chambers.us_senate = makeChamber(state, { id: 'us_senate', name: 'U.S. Senate', level: 'federal', leans: usSenateLeans(), partisanBias: -3, tieBreakParty: presParty, rules: { cloture: 60, override: 2 / 3 } });
     // Senate seat numbering: seats within a state get their class.
     chambers.us_senate.members.forEach((m) => {
       const s = PG.data.stateById[m.state];

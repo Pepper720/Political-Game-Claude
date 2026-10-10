@@ -1,0 +1,83 @@
+/* Interest groups and media outlets (all fictional).
+ * tags: how strongly the group supports (+) or opposes (−) policies with each tag.
+ * blocs: which voter blocs its endorsement and ads reach.
+ * money / ground: PAC dollars and volunteer muscle (1–5). levels: where it is active. */
+(function (PG) {
+  'use strict';
+  PG.data = PG.data || {};
+  PG.data.groups = [
+    { id: 'teachers', name: 'United Educators Federation', kind: 'Union', ideo: { econ: -35, social: -20 }, money: 3, ground: 4, levels: ['school', 'city', 'state', 'federal'],
+      tags: { public_schools: 3, labor: 2, school_choice: -3, tax_hike: 1, spending_cut: -2, curriculum_parent: -2 }, blocs: { sub_family: 1, sub_college: 1.5 } },
+    { id: 'police_union', name: 'Fraternal Association of Police Officers', kind: 'Union', ideo: { econ: 0, social: 35 }, money: 2, ground: 2, levels: ['city', 'state', 'federal'],
+      tags: { police_fund: 3, tough_on_crime: 2, police_reform: -3, criminal_justice_reform: -2, labor: 1, spending_cut: -1 }, blocs: { seniors: 1.5, sub_family: 1 } },
+    { id: 'labor', name: 'American Workers Federation', kind: 'Union', ideo: { econ: -45, social: 0 }, money: 4, ground: 5, levels: ['city', 'state', 'federal'],
+      tags: { labor: 3, min_wage: 3, anti_union: -4, trade_protect: 1, trade_free: -2, healthcare_public: 1, infrastructure: 2, spending_cut: -1 }, blocs: { working: 2.5, black: 1 } },
+    { id: 'public_emp', name: 'Public Employees Union', kind: 'Union', ideo: { econ: -40, social: -10 }, money: 3, ground: 3, levels: ['city', 'state', 'federal'],
+      tags: { labor: 2, spending_cut: -3, anti_union: -4, tax_hike: 1 }, blocs: { working: 1, black: 1 } },
+    { id: 'chamber', name: 'Commerce Council', kind: 'Business', ideo: { econ: 45, social: 5 }, money: 5, ground: 1, levels: ['city', 'state', 'federal'],
+      tags: { tax_cut: 2, business: 3, deregulation: 2, regulation: -2, min_wage: -2, labor: -1, anti_union: 2, infrastructure: 1, trade_free: 2, trade_protect: -2, immigration_open: 1, tax_hike: -3 }, blocs: { sub_family: 1, sub_college: 1 } },
+    { id: 'small_biz', name: 'Independent Business Alliance', kind: 'Business', ideo: { econ: 40, social: 15 }, money: 3, ground: 2, levels: ['city', 'state', 'federal'],
+      tags: { tax_cut: 2, regulation: -2, deregulation: 2, min_wage: -3, labor: -1, tax_hike: -2, paid_leave: -1 }, blocs: { sub_family: 1.5, rural: 1 } },
+    { id: 'gun_rights', name: 'Second Amendment Coalition', kind: 'Advocacy', ideo: { econ: 20, social: 60 }, money: 3, ground: 3, levels: ['state', 'federal'],
+      tags: { guns_expand: 3, guns_restrict: -4 }, blocs: { rural: 2.5, rural_rel: 1.5 } },
+    { id: 'gun_safety', name: 'Families for Gun Safety', kind: 'Advocacy', ideo: { econ: -20, social: -50 }, money: 3, ground: 2, levels: ['state', 'federal'],
+      tags: { guns_restrict: 3, guns_expand: -4 }, blocs: { sub_college: 2, urban_prog: 1 } },
+    { id: 'environment', name: 'Green Future Alliance', kind: 'Advocacy', ideo: { econ: -45, social: -30 }, money: 3, ground: 3, levels: ['city', 'state', 'federal'],
+      tags: { environment: 3, fossil: -3, regulation: 1, deregulation: -1, infrastructure: 1 }, blocs: { young: 2, urban_prog: 2 } },
+    { id: 'energy', name: 'American Energy Producers', kind: 'Industry', ideo: { econ: 50, social: 15 }, money: 5, ground: 1, levels: ['state', 'federal'],
+      tags: { fossil: 3, environment: -2, deregulation: 2, regulation: -2, tax_cut: 1 }, blocs: { rural: 1.5, working: 1 } },
+    { id: 'faith', name: 'Faith & Family Council', kind: 'Advocacy', ideo: { econ: 25, social: 70 }, money: 2, ground: 4, levels: ['school', 'city', 'state', 'federal'],
+      tags: { abortion_restrict: 3, religious_liberty: 3, curriculum_parent: 2, school_choice: 2, lgbt_rights: -2, drug_liberalize: -2, abortion_protect: -3, family: 2 }, blocs: { rural_rel: 3, latino: 0.5, black: 0.5 } },
+    { id: 'repro', name: 'Reproductive Freedom Network', kind: 'Advocacy', ideo: { econ: -30, social: -65 }, money: 3, ground: 3, levels: ['state', 'federal'],
+      tags: { abortion_protect: 3, abortion_restrict: -4, healthcare_public: 1 }, blocs: { sub_college: 2, young: 1.5 } },
+    { id: 'civil_lib', name: 'Constitutional Rights Project', kind: 'Advocacy', ideo: { econ: -10, social: -45 }, money: 2, ground: 1, levels: ['city', 'state', 'federal'], litigator: true,
+      tags: { civil_liberties: 3, police_reform: 2, criminal_justice_reform: 2, tough_on_crime: -2, immigration_open: 1, voting_access: 2, election_security: -1, curriculum_parent: -1, tech_reg: -1 }, blocs: { urban_prog: 1.5, black: 1 } },
+    { id: 'liberty_inst', name: 'Liberty Legal Institute', kind: 'Advocacy', ideo: { econ: 50, social: 25 }, money: 2, ground: 1, levels: ['city', 'state', 'federal'], litigator: true,
+      tags: { religious_liberty: 2, regulation: -2, rent_control: -3, guns_restrict: -2, tax_hike: -1, deregulation: 2, anti_union: 1, tech_reg: -1 }, blocs: { sub_family: 1, rural: 0.5 } },
+    { id: 'seniors_league', name: 'Retirees\' League', kind: 'Advocacy', ideo: { econ: -10, social: 15 }, money: 3, ground: 4, levels: ['state', 'federal'],
+      tags: { seniors: 3, healthcare_public: 1, spending_cut: -1, tax_hike: -1 }, blocs: { seniors: 3 } },
+    { id: 'farm', name: 'Farmers\' Bureau Federation', kind: 'Industry', ideo: { econ: 35, social: 30 }, money: 3, ground: 2, levels: ['state', 'federal'],
+      tags: { agriculture: 3, trade_free: 2, trade_protect: -2, regulation: -2, environment: -1 }, blocs: { rural: 2.5 } },
+    { id: 'finance', name: 'Financial Services Roundtable', kind: 'Industry', ideo: { econ: 55, social: -5 }, money: 5, ground: 0, levels: ['state', 'federal'],
+      tags: { deregulation: 2, regulation: -2, tax_cut: 2, tax_hike: -3 }, blocs: { sub_college: 1 } },
+    { id: 'health_industry', name: 'Health Systems Association', kind: 'Industry', ideo: { econ: 20, social: 0 }, money: 4, ground: 1, levels: ['state', 'federal'],
+      tags: { healthcare_market: 2, regulation: -2, healthcare_public: 0, welfare: 1 }, blocs: { seniors: 1 } },
+    { id: 'tech', name: 'Digital Innovation Council', kind: 'Industry', ideo: { econ: 30, social: -30 }, money: 5, ground: 0, levels: ['city', 'state', 'federal'],
+      tags: { tech_reg: -3, immigration_open: 1, deregulation: 1, housing_build: 1 }, blocs: { sub_college: 1, young: 0.5 } },
+    { id: 'developers', name: 'Builders & Realtors Association', kind: 'Industry', ideo: { econ: 40, social: 5 }, money: 4, ground: 1, levels: ['city', 'state'],
+      tags: { housing_build: 3, rent_control: -3, zoning_local: -2, tax_cut: 1, regulation: -1 }, blocs: { sub_family: 1 } },
+    { id: 'neighborhood', name: 'Neighborhood Preservation League', kind: 'Civic', ideo: { econ: 10, social: 0 }, money: 1, ground: 3, levels: ['city'],
+      tags: { zoning_local: 3, housing_build: -2, infrastructure: 1, quality: 1 }, blocs: { sub_family: 2, seniors: 1.5 } },
+    { id: 'housing_adv', name: 'Homes for All Coalition', kind: 'Advocacy', ideo: { econ: -45, social: -30 }, money: 1, ground: 3, levels: ['city', 'state'],
+      tags: { rent_control: 3, welfare: 2, housing_build: 2, tough_on_crime: -1 }, blocs: { young: 1.5, urban_prog: 1.5, latino: 1 } },
+    { id: 'taxpayers', name: 'Taxpayers Union', kind: 'Advocacy', ideo: { econ: 60, social: 15 }, money: 3, ground: 2, levels: ['school', 'city', 'state', 'federal'],
+      tags: { tax_cut: 3, tax_hike: -4, spending_cut: 3, welfare: -1, infrastructure: -1 }, blocs: { seniors: 1, sub_family: 1.5, rural: 1 } },
+    { id: 'veterans', name: 'Veterans of America League', kind: 'Civic', ideo: { econ: 10, social: 25 }, money: 2, ground: 3, levels: ['state', 'federal'],
+      tags: { veterans: 3, defense: 2 }, blocs: { working: 1, rural: 1, seniors: 1 } },
+    { id: 'immigrant_rights', name: 'New Americans Coalition', kind: 'Advocacy', ideo: { econ: -30, social: -45 }, money: 2, ground: 3, levels: ['city', 'state', 'federal'],
+      tags: { immigration_open: 3, immigration_restrict: -4, border_deal: 1 }, blocs: { latino: 2.5, aapi: 1.5 } },
+    { id: 'border_security', name: 'Secure Borders Alliance', kind: 'Advocacy', ideo: { econ: 20, social: 55 }, money: 2, ground: 2, levels: ['city', 'state', 'federal'],
+      tags: { immigration_restrict: 3, immigration_open: -4, border_deal: -1 }, blocs: { rural: 1.5, seniors: 1, working: 1 } },
+    { id: 'parents_choice', name: 'Parents for Education Choice', kind: 'Advocacy', ideo: { econ: 30, social: 35 }, money: 2, ground: 3, levels: ['school', 'state'],
+      tags: { school_choice: 3, curriculum_parent: 3, public_schools: -1, phone: 1 }, blocs: { sub_family: 2, rural_rel: 1 } },
+    { id: 'equality', name: 'Equality Rights Council', kind: 'Advocacy', ideo: { econ: -20, social: -60 }, money: 2, ground: 2, levels: ['city', 'state', 'federal'],
+      tags: { lgbt_rights: 3, religious_liberty: -2, civil_liberties: 1 }, blocs: { young: 1.5, urban_prog: 1.5 } },
+    { id: 'reform', name: 'Clean Government Project', kind: 'Civic', ideo: { econ: 0, social: -5 }, money: 1, ground: 2, levels: ['city', 'state', 'federal'],
+      tags: { transparency: 3, good_government: 3 }, blocs: { sub_college: 2 } },
+    { id: 'justice_reform', name: 'Second Chance Alliance', kind: 'Advocacy', ideo: { econ: -15, social: -40 }, money: 1, ground: 2, levels: ['city', 'state', 'federal'],
+      tags: { criminal_justice_reform: 3, tough_on_crime: -3, drug_liberalize: 2, police_reform: 1 }, blocs: { black: 1.5, young: 1 } },
+  ];
+  PG.data.groupById = Object.fromEntries(PG.data.groups.map((g) => [g.id, g]));
+
+  /* Media outlets: lean (−left / +right), reach by level, credibility. */
+  PG.data.outlets = [
+    { id: 'local_paper', name: 'The Daily Register', kind: 'Local newspaper', lean: -5, levels: ['school', 'city', 'state'], reach: 2 },
+    { id: 'local_tv', name: 'Channel 7 Action News', kind: 'Local TV', lean: 0, levels: ['school', 'city', 'state'], reach: 3 },
+    { id: 'statehouse', name: 'Capitol Ledger', kind: 'Statehouse news site', lean: 0, levels: ['state'], reach: 1 },
+    { id: 'national_paper', name: 'The National Courier', kind: 'National newspaper', lean: -15, levels: ['state', 'federal'], reach: 3 },
+    { id: 'cable_left', name: 'Progress Network', kind: 'Cable news (left)', lean: -55, levels: ['federal', 'state'], reach: 3 },
+    { id: 'cable_right', name: 'Liberty News Channel', kind: 'Cable news (right)', lean: 55, levels: ['federal', 'state'], reach: 3 },
+    { id: 'talk_radio', name: 'Heartland Talk Radio', kind: 'Talk radio', lean: 45, levels: ['city', 'state', 'federal'], reach: 2 },
+    { id: 'podcast', name: 'The Unfiltered Podcast', kind: 'Podcast', lean: 10, levels: ['state', 'federal'], reach: 2 },
+  ];
+})(globalThis.PG = globalThis.PG || {});

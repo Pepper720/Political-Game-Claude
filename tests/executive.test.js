@@ -45,7 +45,7 @@ test('presidential race plays from primaries to a general-election result', () =
     const s = game({ seed });
     const r = PG.game.act(s, { type: 'career.declare', officeId: 'president' });
     assert.ok(r.ok, r.msg);
-    PG.game.act(s, { type: 'career.fastForward' });
+    for (let k = 0; k < 30 && !s.campaign; k++) { if (s.events.active) PG.game.act(s, { type: 'event.choose', i: 0 }); else PG.game.act(s, { type: 'career.fastForward' }); }
     assert.equal(s.campaign.stage, 'pres_primary');
     const nightsKinds = [];
     let g = 0;
@@ -66,7 +66,7 @@ test('presidential race plays from primaries to a general-election result', () =
 test('general election: winner needs 270; a 269-269 tie goes to the House by state delegations', () => {
   const s = game({ seed: 'tie' });
   PG.game.act(s, { type: 'career.declare', officeId: 'president' });
-  PG.game.act(s, { type: 'career.fastForward' });
+  for (let k = 0; k < 30 && !s.campaign; k++) { if (s.events.active) PG.game.act(s, { type: 'event.choose', i: 0 }); else PG.game.act(s, { type: 'career.fastForward' }); }
   // Jump straight to a general election setup.
   const c = s.campaign;
   for (const x of c.candidates) if (!x.isPlayer) x.active = false;

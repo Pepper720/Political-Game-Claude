@@ -277,7 +277,7 @@
       control = parties.every((p) => p === parties[0]) ? parties[0] : 'split';
     }
     const causes = ['Map-drawing control: ' + ({ R: 'Republican trifecta', D: 'Democratic trifecta', commission: 'independent commission', split: 'divided government — courts and compromise' }[control] || control)];
-    const shift = (chId, n) => {
+    const shift = (chId) => {
       const ch = state.world.chambers[chId];
       if (!ch) return;
       const idx = ch.members.map((m, i) => i).filter((i) => ch.members[i].state === st.id);
@@ -289,7 +289,6 @@
         m.lean = leans[k];
         if (m.isPlayer) causes.push('Your ' + ch.name + ' district moved from ' + U.fmtLean(before) + ' to ' + U.fmtLean(m.lean) + '.');
       });
-      void n;
     };
     shift('state_house'); shift('state_senate'); shift('us_house');
     ['sh', 'ss', 'cd'].forEach((k) => PG.juris.invalidate(state, k));

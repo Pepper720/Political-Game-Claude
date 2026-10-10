@@ -168,6 +168,9 @@
     if (PG.executive) PG.executive.monthly(state, autopilot);
     updateOutcomes(state);
     PG.groups.monthly(state);
+    // The press cycle: relations with reporters tint how everything else is covered.
+    const tone = U.clamp(state.player.media / 60, -1, 1) * 0.35;
+    if (Math.abs(tone) > 0.05) for (const b of Object.keys(g.approval.byBloc)) g.mods[b] = (g.mods[b] || 0) + tone;
     PG.approval.monthly(state);
     monthlyCapital(state);
     g.actionsLeft = ACTIONS_PER_MONTH;
@@ -186,7 +189,6 @@
     const g = state.gov, p = state.player;
     if (!g) return { ok: false, msg: 'Not in office.' };
     if (!useAction(state)) return { ok: false, msg: 'No time left this month (3 personal actions per month).' };
-    const e = PG.juris.electorate(state, g.key);
     switch (kind) {
       case 'townhall': {
         // Risky: rewards charisma, punishes unpopular officials.

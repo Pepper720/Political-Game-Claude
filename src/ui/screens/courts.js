@@ -20,9 +20,9 @@
     const done = C.cases.filter((c) => c.status !== 'pending').slice(-15).reverse();
     h += '<div class="card"><h3>Decided</h3>' + (done.length ? done.map((c) => caseRow(g, c, false)).join('') : '<p class="muted">None yet.</p>') + '</div>';
     h += '<div class="grid g2"><div class="card"><h3>U.S. Supreme Court</h3><p class="small muted">Median justice: ' + U.round(PG.courts.median(C.scotus.map((j) => j.ideo)), 2) + ' (' + leanWord(PG.courts.median(C.scotus.map((j) => j.ideo))) + '). Lower federal courts: ' + U.round(C.circuit, 2) + '.</p><table>' +
-      C.scotus.map((j) => '<tr><td>' + esc(j.vacant ? '(vacant)' : j.name) + '</td><td class="num">' + (j.vacant ? '' : j.age) + '</td><td>' + (j.vacant ? '' : ui.centerBar(j.ideo, 1)) + '</td></tr>').join('') + '</table></div>' +
+      C.scotus.map((j) => '<tr><td>' + esc(j.vacant ? '(vacant)' : j.name) + '</td><td class="num">' + (j.vacant ? '' : j.age) + '</td><td>' + (j.vacant ? '' : ui.centerBar(j.ideo, 1, true)) + '</td></tr>').join('') + '</table></div>' +
       '<div class="card"><h3>' + esc(st.name) + ' Supreme Court</h3><p class="small muted">Median justice: ' + U.round(PG.courts.median(C.stateSup.map((j) => j.ideo)), 2) + '.</p><table>' +
-      C.stateSup.map((j) => '<tr><td>' + esc(j.vacant ? '(vacant)' : j.name) + '</td><td class="num">' + (j.vacant ? '' : j.age) + '</td><td>' + (j.vacant ? '' : ui.centerBar(j.ideo, 1)) + '</td></tr>').join('') + '</table><p class="small muted">Bars: left = liberal, right = conservative.</p></div></div>';
+      C.stateSup.map((j) => '<tr><td>' + esc(j.vacant ? '(vacant)' : j.name) + '</td><td class="num">' + (j.vacant ? '' : j.age) + '</td><td>' + (j.vacant ? '' : ui.centerBar(j.ideo, 1, true)) + '</td></tr>').join('') + '</table><p class="small muted">Bars: left = liberal, right = conservative.</p></div></div>';
     return h;
   };
 

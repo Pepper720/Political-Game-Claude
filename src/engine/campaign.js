@@ -8,7 +8,6 @@
   const DAY_KEYS = ['fundraising', 'digital', 'retail', 'media', 'ground', 'policy', 'prep', 'rest'];
   const DAY_LABELS = { fundraising: 'Call time (big donors)', digital: 'Digital & small-dollar', retail: 'Retail campaigning', media: 'Media & interviews', ground: 'Ground organizing', policy: 'Policy work', prep: 'Debate prep', rest: 'Rest' };
 
-  function c0(state) { return state.campaign; }
   function office(state) { return PG.data.officeById[state.campaign.officeId]; }
   function playerCand(state) { const c = state.campaign; return c ? c.candidates.find((x) => x.isPlayer) : null; }
   function stageCands(state) {
@@ -17,7 +16,6 @@
   }
   function opponents(state) { return stageCands(state).filter((x) => !x.isPlayer); }
   function electorate(state) { return PG.juris.electorate(state, state.campaign.key); }
-  function tb(state) { return state.campaign.typicalBudget; }
   function sizeFactor(state) { return U.clamp(Math.sqrt(60000 / electorate(state).voters), 0.05, 1.6); }
 
   function daysAvailable(state) {

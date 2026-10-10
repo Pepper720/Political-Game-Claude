@@ -2,7 +2,6 @@
  * are generated on demand (deterministically from the world) and cached in state. */
 (function (PG) {
   'use strict';
-  const U = PG.util;
 
   const OFFICE_KEY = { school_board: 'school', city_council: 'ward', mayor: 'city', state_house: 'sh', state_senate: 'ss', governor: 'state', us_house: 'cd', us_senate: 'state', president: 'nation' };
   const OFFICE_LEVEL = { school_board: 'school', city_council: 'city', mayor: 'city', state_house: 'state', state_senate: 'state', governor: 'state', us_house: 'federal', us_senate: 'federal', president: 'federal' };

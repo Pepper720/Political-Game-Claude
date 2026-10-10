@@ -68,7 +68,7 @@ function loadPlaywright() {
         if (i < 10) await page.screenshot({ path: path.join(outDir, tag + '-05-voters.png'), fullPage: true });
       }
       if (phase === 'governing' && i % 2 === 0) {
-        for (const t of ['Office', 'Legislat', 'Budget', 'Groups', 'World', 'Profile', 'Log']) {
+        for (const t of ['Office', 'Legislat', 'Budget', 'Executive', 'Groups', 'Courts', 'World', 'Profile', 'Log', 'How it works']) {
           const b = page.locator('.nav button:has-text("' + t + '")').first();
           if (await b.count()) await b.click();
         }

@@ -40,8 +40,6 @@
     return out;
   }
 
-  function nameInState(state, sid) { return st(sid).name; }
-
   function randomHomeState(state, exclude) {
     return R.weighted(state, PG.data.states.filter((s) => !s.isDC && s.id !== exclude), (s) => Math.sqrt(s.population)).id;
   }
@@ -307,9 +305,7 @@
 
   function homeBonus(state, x, sid) {
     const base = sid.split('-')[0];
-    let b = x.homeState === base ? 4 : 0;
-    if (x.isPlayer && state.campaign.pres.vp && state.campaign.pres.vp.home === base) b += 0;
-    return b;
+    return x.homeState === base ? 4 : 0;
   }
 
   function estimates(state) {
@@ -427,7 +423,6 @@
       notes.push('No candidate reached 270 electoral votes. Under the 12th Amendment the House chose the President, one vote per state delegation: ' + Object.entries(tally).map(([p, n]) => PG.data.parties[p].adj + ' delegations ' + n).join(', ') + ' (26 needed).');
     }
     const totalPop = U.sum(Object.values(pop));
-    const pc = cands.find((x) => x.isPlayer);
     const opp = cands.find((x) => !x.isPlayer && x.nominee) || sorted.find((x) => !x.isPlayer);
     notes.unshift('Electoral votes: you ' + ev.player + ', ' + opp.name + ' ' + ev[opp.id] + '. Popular vote: you ' + U.fmtPct(pop.player / totalPop) + ', ' + opp.name + ' ' + U.fmtPct(pop[opp.id] / totalPop) + '.');
     const flips = Object.entries(results).filter(([k, r]) => k.indexOf('-') < 0 && Math.abs((r.shares.player || 0) - (r.shares[opp.id] || 0)) < 0.03).map(([k]) => k);
@@ -473,7 +468,6 @@
       }
       steps.push({ label: labels[k], states: sts, ev: tally });
     }
-    const pc = cands.find((x) => x.isPlayer);
     const won = winnerId === 'player';
     return {
       kind: 'pres_general', title: 'Presidential election', date: { ...state.date }, office: 'President of the United States', jurisdiction: 'United States',
@@ -482,7 +476,6 @@
       message: won ? 'You are the President-elect!' : (cands.find((x) => x.id === winnerId) || {}).name + ' wins the presidency.',
       final: { shares: Object.fromEntries(cands.map((x) => [x.id, pop[x.id] / U.sum(Object.values(pop))])) }, calledAt: steps.length - 1, rounds: null, turnout: 0.64, mailLate: false,
     };
-    void pc;
   }
 
   PG.presidential = { setup, afterMonth, chooseVP, setFocus, estimates, electorateFor, delegateTable, allocate, proportional, stateKeys, evOf, runGeneral, primaryCands, generalCands, monthOf };

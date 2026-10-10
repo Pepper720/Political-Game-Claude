@@ -12,7 +12,6 @@
   function chamber(state, id) { return state.world.chambers[id]; }
   function member(state, chamberId, mid) { return chamber(state, chamberId).members.find((m) => m.id === mid); }
   function polarization(level) { return level === 'federal' ? 1 : level === 'state' ? 0.8 : 0.3; }
-  function isPlayerMember(m) { return !!m.isPlayer; }
 
   // Executive for a level as a member-like object (ideology + party).
   function execFor(state, level) {

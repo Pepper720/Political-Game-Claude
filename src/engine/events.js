@@ -49,7 +49,7 @@
     processEchoes(state);
     if (state.events.active) return;
     const phase = phaseOf(state);
-    const p = { governing: 0.38, campaign: 0.28, career: 0 }[phase];
+    const p = { governing: 0.38, campaign: 0.28, career: 0.12 }[phase];
     if (!R.chance(state, p)) return;
     const pool = PG.data.events.filter((e) => eligible(state, e));
     const ev = R.weighted(state, pool, (e) => (e.when && e.when.weight) || 1);
@@ -127,6 +127,14 @@
     if (eff.fireCabinet && state.gov && inst.vars.posId && state.gov.cabinet[inst.vars.posId]) {
       PG.executive.fire(state, inst.vars.posId);
       lines.push('Cabinet post vacated');
+    }
+    if (eff.nuclear) {
+      const sen = state.world.chambers.us_senate;
+      if (sen.majority === state.player.party) {
+        sen.rules.cloture = null;
+        lines.push('The Senate abolished the legislative filibuster: simple majorities now pass bills — for whichever party holds the majority.');
+        PG.game.news(state, 'Senate goes nuclear, ends the filibuster', 0);
+      } else lines.push('The effort fell short: your party lacks the majority.');
     }
     if (eff.redistrict && state.gov && state.gov.kind === 'legislator') {
       const ch = state.world.chambers[state.gov.body];

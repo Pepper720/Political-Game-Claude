@@ -17,9 +17,10 @@ function runRace(s, officeId, opts) {
   PG.game.act(s, { type: 'career.fastForward' });
   const nights = [];
   let guard = 0;
-  while ((s.campaign || s.electionNight || s.events.active) && guard++ < 60) {
+  while ((s.campaign || s.electionNight || s.events.active || s.player.declared) && guard++ < 80) {
     if (s.electionNight) { nights.push(s.electionNight); PG.game.act(s, { type: 'election.dismiss' }); continue; }
     if (s.events.active) { PG.game.act(s, { type: 'event.choose', i: 0 }); continue; }
+    if (!s.campaign) { PG.game.act(s, { type: 'career.fastForward' }); continue; }
     if (opts.boost) { const pc = PG.campaign.playerCand(s); pc.fav = Math.max(pc.fav, 70); pc.cash += 1e6; }
     const plan = PG.campaign.defaultPlan(s);
     PG.game.act(s, { type: 'campaign.setPlan', plan });

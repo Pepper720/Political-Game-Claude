@@ -165,7 +165,7 @@
     if (cs.target.type === 'eo') { const rec = state.gov.eos.find((x) => x.id === cs.target.id); if (rec) rec.active = false; }
     else {
       const en = state.gov.enacted.find((x) => x.billId === cs.target.id);
-      if (en && en.active) { toggleLaw(state, en, false); if (en.scope > 1) { en.scope--; toggleLaw(state, en, true); } }
+      if (en) { if (en.active) toggleLaw(state, en, false); if (en.scope > 1) { en.scope--; toggleLaw(state, en, true); } }
     }
     if (cs.injunction) cs.injunction = false;
     PG.effects.apply(state, { approval: { base: -1.5 }, groups: { [cs.plaintiff]: 4 } });

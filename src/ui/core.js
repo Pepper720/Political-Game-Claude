@@ -34,9 +34,10 @@
   ui.pct = function (x, d) { return (x * 100).toFixed(d === undefined ? 1 : d) + '%'; };
   ui.signed = function (x, d) { const v = U.round(x, d === undefined ? 1 : d); return '<span class="' + (v > 0 ? 'good' : v < 0 ? 'bad' : 'muted') + '">' + (v > 0 ? '+' : '') + v + '</span>'; };
   ui.bar = function (frac, color) { return '<div class="bar"><i style="width:' + U.clamp(frac * 100, 0, 100).toFixed(1) + '%;' + (color ? 'background:' + color : '') + '"></i></div>'; };
-  ui.centerBar = function (v, max) {
+  ui.centerBar = function (v, max, neutral) {
     const f = U.clamp(v / max, -1, 1) * 50;
-    const style = f >= 0 ? 'left:50%;width:' + f + '%;background:var(--good)' : 'left:' + (50 + f) + '%;width:' + (-f) + '%;background:var(--bad)';
+    const pos = neutral ? 'var(--ink-2)' : 'var(--good)', neg = neutral ? 'var(--ink-2)' : 'var(--bad)';
+    const style = f >= 0 ? 'left:50%;width:' + f + '%;background:' + pos : 'left:' + (50 + f) + '%;width:' + (-f) + '%;background:' + neg;
     return '<div class="bar"><span class="mid"></span><i style="' + style + '"></i></div>';
   };
   ui.whyList = function (lines) { return lines && lines.length ? '<ul class="why">' + lines.map((l) => '<li>' + ui.esc(l) + '</li>').join('') + '</ul>' : ''; };

@@ -118,7 +118,7 @@
     const g = state.gov, p = state.player;
     const diff = PG.data.difficulty[state.difficulty];
     const base = g.kind === 'executive' ? 7 : 5;
-    const add = (base + (g.approval.overall - 50) / 6 + (g.kind === 'legislator' ? (p.partyRel - 50) / 25 : 0)) * diff.capital;
+    const add = (base + (g.approval.overall - 50) / 6 + (g.kind === 'legislator' ? (p.partyRel - 50) / 25 : 0) + PG.character.jobMods(state).capital * 2) * diff.capital;
     const cap = g.kind === 'executive' ? 60 : 40;
     p.capital = U.round(U.clamp(p.capital + Math.max(1, add), 0, cap), 1);
   }
@@ -132,6 +132,8 @@
       t += (g.lawOutcomes[k] || 0) * 2.2;
       if (k === 'crime') t += (state.world.local.unemployment - 4.5) * 1.5;
       t += cabinetBonus(state, k);
+      const om = PG.character.jobMods(state).outcome[k];
+      if (om) t += (k === 'crime' ? -om : om) * (g.kind === 'executive' ? 1 : 0.4);
       g.outcomes[k] = U.round(U.clamp(g.outcomes[k] + 0.08 * (t - g.outcomes[k]) + R.normal(state, 0, 0.4), 0, 100), 1);
     }
   }
@@ -171,9 +173,20 @@
     // The press cycle: relations with reporters tint how everything else is covered.
     const tone = U.clamp(state.player.media / 60, -1, 1) * 0.35;
     if (Math.abs(tone) > 0.05) for (const b of Object.keys(g.approval.byBloc)) g.mods[b] = (g.mods[b] || 0) + tone;
+    // Personality at work: firebrands energize the base; colleagues warm to dealmakers or cool on firebrands.
+    const jmods = PG.character.jobMods(state);
+    if (jmods.base) for (const b of PG.effects.blocGroups(state, PG.juris.electorate(state, g.key)).base) g.mods[b] = (g.mods[b] || 0) + jmods.base;
+    if (jmods.colleagues) for (const c of PG.juris.chambersFor(state, g.level)) state.world.chambers[c].members.forEach((m) => { if (!m.isPlayer) m.rel = U.clamp((m.rel || 0) + jmods.colleagues, -100, 100); });
+    // Sunset clauses expire.
+    for (const en of g.enacted) {
+      if (en.active && en.sunset && U.dateCmp(state.date, en.sunset) >= 0) {
+        PG.courts.toggleLaw(state, en, false); en.sunset = null; en.expired = true;
+        PG.game.log(state, 'legislation', PG.data.lawById[en.lawId].name + ' expired under its sunset clause.');
+      }
+    }
     PG.approval.monthly(state);
     monthlyCapital(state);
-    g.actionsLeft = ACTIONS_PER_MONTH;
+    g.actionsLeft = ACTIONS_PER_MONTH + jmods.actions;
     checkDecision(state);
     if (PG.campaign && PG.campaign.primaryThreat) PG.campaign.primaryThreat(state);
   }
@@ -193,7 +206,7 @@
       case 'townhall': {
         // Risky: rewards charisma, punishes unpopular officials.
         const skill = PG.character.stat(state, 'charisma') / 100;
-        const roll = R.next(state) + skill * 0.4 - (g.approval.overall < 40 ? 0.15 : 0);
+        const roll = R.next(state) + skill * 0.4 - (g.approval.overall < 40 ? 0.15 : 0) + PG.character.jobMods(state).townhall;
         g.townHalls++;
         if (roll > 0.55) {
           PG.effects.apply(state, { approval: { all: 1.2, swing: 0.8 } });
@@ -210,7 +223,7 @@
       }
       case 'fundraiser': {
         const tb = PG.juris.typicalBudget(state, p.office.officeId);
-        const amt = Math.round(tb * 0.035 * (PG.character.stat(state, 'fundraising') / 50) * (g.kind === 'executive' ? 1.4 : 1) * (0.8 + R.next(state) * 0.4));
+        const amt = Math.round(tb * 0.035 * (PG.character.stat(state, 'fundraising') / 50) * (g.kind === 'executive' ? 1.4 : 1) * (1 + Math.max(-0.5, PG.character.jobMods(state).fundraise)) * (0.8 + R.next(state) * 0.4));
         p.cash += amt;
         let note = '';
         if (R.chance(state, 0.3 * ((p.mods.commitmentRate) || 1))) {
@@ -224,13 +237,14 @@
       }
       case 'district': {
         // Constituent services / ribbon cuttings: modest, safe local approval.
-        PG.effects.apply(state, { approval: { all: 0.6, swing: 0.4 } });
+        const k = 1 + PG.character.jobMods(state).constituent;
+        PG.effects.apply(state, { approval: { all: 0.6 * k, swing: 0.4 * k } });
         p.nameRec = U.clamp(p.nameRec + 1, 0, 100);
         return { ok: true, msg: 'Constituent services and local appearances (+approval).' };
       }
       case 'media': {
         const m = p.media;
-        const good = R.chance(state, U.clamp(0.55 + m / 200 + (PG.character.stat(state, 'charisma') - 50) / 200, 0.2, 0.9));
+        const good = R.chance(state, U.clamp(0.55 + m / 200 + (PG.character.stat(state, 'charisma') - 50) / 200 + PG.character.jobMods(state).media, 0.2, 0.92));
         PG.effects.apply(state, good ? { approval: 0.8, nameRec: 2, media: 1 } : { approval: -0.6, nameRec: 1, media: -1 });
         return { ok: true, msg: good ? 'A strong media appearance.' : 'An awkward interview made the rounds.' };
       }

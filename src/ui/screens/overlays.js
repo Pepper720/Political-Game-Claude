@@ -33,6 +33,7 @@
   ui.screens.night = function (g) {
     const n = g.electionNight;
     if (n.kind === 'pres_primary') return ui.screens.presPrimaryNight(g);
+    if (n.kind === 'party_results') return ui.screens.partyNight(g);
     if (n.kind === 'pres_general') return ui.screens.presGeneralNight(g);
     const k = Math.min(ui.nightStep, n.steps.length - 1);
     const step = n.steps[k];

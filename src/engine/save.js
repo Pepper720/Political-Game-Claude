@@ -34,6 +34,7 @@
     const state = migrate(wrapper);
     const errors = validate(state);
     if (errors.length) throw new Error('Invalid save: ' + errors.join(' '));
+    if (state.party && PG.party) PG.party.sync(state);
     return state;
   }
 

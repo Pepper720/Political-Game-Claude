@@ -167,6 +167,12 @@
     if (party === 'R') return lean / 2;
     if (party === 'D') return -lean / 2;
     if (party === 'L') return lean * 0.12 - 17;
+    const cp = PG.data.parties[party];
+    if (cp && cp.custom) {
+      // A new party: no partisan home yet, plus a "wasted vote" penalty that shrinks as it proves itself.
+      const s = cp.strength || 0;
+      return -Math.abs(lean) * 0.22 * (1 - s * 0.5) - 78 * Math.pow(1 - s, 1.5) - 9;
+    }
     if (party === 'G') return -lean * 0.12 - 17;
     return -Math.abs(lean) * 0.22 - 13; // independent: no party home + wasted-vote worry
   }

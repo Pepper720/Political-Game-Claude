@@ -13,20 +13,28 @@
     }
     if (p.pendingOffice) h += '<div class="card alert"><h3>Office-elect</h3><p>You take office as ' + esc(PG.data.officeById[p.pendingOffice.officeId].name) + ' in ' + esc(U.fmtDate(p.pendingOffice.info.termStart)) + '.</p></div>';
     if (p.office) h += '<div class="card"><p>You currently serve as <b>' + esc(PG.data.officeById[p.office.officeId].name) + '</b> (term ends ' + esc(U.fmtDate(p.office.termEnd)) + '). You can run for another office while serving; your staff handle routine work while you campaign.</p></div>';
-    h += '<div class="card"><h2>The ladder</h2><p class="muted small">Requirements, term lengths and limits follow real rules for ' + esc(PG.juris.homeState(g).name) + '. Bigger leaps are legal but donors and voters will doubt you.</p><div class="tablewrap"><table><thead><tr><th>Office</th><th>Jurisdiction</th><th>Next election</th><th class="num">Lean</th><th class="num">Typical budget</th><th>Term</th><th></th></tr></thead><tbody>';
-    for (const o of PG.data.offices) {
-      const el = PG.character.eligibility(g, o.id);
-      let jur = '', lean = '';
-      try { const e = PG.juris.forOffice(g, o.id); jur = e.name; lean = U.fmtLean(e.lean); } catch (err) { jur = '—'; }
-      const info = el.info;
-      const st = PG.juris.homeState(g);
-      const term = PG.calendar.termLength(o.id, st);
-      const action = el.ok ? ui.btn(p.office && p.office.officeId === o.id ? 'Seek reelection' : 'Run', { type: 'career.declare', officeId: o.id }, 'primary small', { disabled: !!p.declared || !!g.campaign || g.phase === 'gameover' }) : '';
-      h += '<tr><td><b>' + esc(o.name) + '</b><div class="small muted">' + esc(o.note) + '</div></td><td>' + esc(jur) + '</td><td class="nowrap">' + (info ? esc(U.fmtShortDate(info.general)) + (info.primary && o.id !== 'president' ? '<div class="small muted">primary ' + esc(U.fmtShortDate(info.primary)) + '</div>' : '') + '<div class="small muted">file by ' + esc(U.fmtShortDate(info.filingDeadline)) + '</div>' : '—') + '</td>' +
-        '<td class="num">' + esc(lean) + '</td><td class="num">' + (jur !== '—' ? esc(U.fmtMoney(PG.juris.typicalBudget(g, o.id))) : '') + '</td><td class="nowrap">' + term + ' yrs</td><td>' + action +
-        (!el.ok ? '<div class="small bad">' + el.reasons.map(esc).join('<br>') + '</div>' : '') + (el.ok && el.warnings.length ? '<div class="small warn">' + el.warnings.map(esc).join('<br>') + '</div>' : '') + '</td></tr>';
+    const LEVELS = [['local', '🏘️ Local'], ['state', '🏛️ State'], ['federal', '🦅 Federal']];
+    h += '<p class="muted">Requirements, term lengths and limits follow real rules for ' + esc(PG.juris.homeState(g).name) + '. Bigger leaps are legal, but donors and voters will doubt you.</p>';
+    for (const [lvl, title] of LEVELS) {
+      h += '<h2 class="section">' + title + '</h2><div class="grid g3">';
+      for (const o of PG.data.offices.filter((x) => x.level === lvl)) {
+        const el = PG.character.eligibility(g, o.id);
+        let jur = '', lean = null;
+        try { const e = PG.juris.forOffice(g, o.id); jur = e.name; lean = e.lean; } catch (err) { jur = '—'; }
+        const info = el.info;
+        const st = PG.juris.homeState(g);
+        const term = PG.calendar.termLength(o.id, st);
+        const mineNow = p.office && p.office.officeId === o.id;
+        const action = el.ok ? ui.btn(mineNow ? 'Seek reelection' : 'Run', { type: 'career.declare', officeId: o.id }, 'primary', { disabled: !!p.declared || !!g.campaign || g.phase === 'gameover' }) : '';
+        const leanChip = lean === null ? '' : '<span class="chip ' + (Math.abs(lean) < 6 ? '' : lean > 0 ? 'R' : 'D') + '" title="Partisan lean">' + U.fmtLean(lean) + '</span>';
+        h += '<div class="card office ' + (el.ok ? 'open' : 'locked') + (mineNow ? ' current' : '') + '"><div class="row between"><h3>' + esc(o.name) + '</h3>' + leanChip + '</div>' +
+          '<p class="small muted">' + esc(jur) + ' · ' + term + '-year term' + (jur !== '—' ? ' · typical budget ' + esc(U.fmtMoney(PG.juris.typicalBudget(g, o.id))) : '') + '</p>' +
+          (info ? '<p class="small">🗓️ Election ' + esc(U.fmtShortDate(info.general)) + (info.primary && o.id !== 'president' ? ' · primary ' + esc(U.fmtShortDate(info.primary)) : '') + ' · file by ' + esc(U.fmtShortDate(info.filingDeadline)) + '</p>' : '') +
+          (!el.ok ? '<p class="small bad">🔒 ' + el.reasons.map(esc).join('<br>🔒 ') + '</p>' : '') + (el.ok && el.warnings.length ? '<p class="small warn">' + el.warnings.map(esc).join('<br>') + '</p>' : '') +
+          '<details><summary class="small">Rules</summary><p class="small muted">' + esc(o.note) + '</p></details>' + (action ? '<div class="row" style="margin-top:8px">' + action + '</div>' : '') + '</div>';
+      }
+      h += '</div>';
     }
-    h += '</tbody></table></div></div>';
     if (g.phase !== 'gameover') h += '<div class="card"><h3>Leave public life</h3><p class="muted small">Retiring ends the game with a legacy summary (after your current term, if you hold office).</p>' + ui.btn('Retire', { type: 'career.retire' }, 'danger') + '</div>';
     return h;
   };
@@ -74,7 +82,7 @@
     return h;
   };
 
-  function kpi(label, val) { return '<div class="kpi"><b>' + esc(val) + '</b><span>' + esc(label) + '</span></div>'; }
+  function kpi(label, val, sub, tone) { return '<div class="kpi' + (tone ? ' ' + tone : '') + '"><b>' + esc(val) + '</b><span>' + esc(label) + '</span>' + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</div>'; }
   ui.kpi = kpi;
   ui.splitbar = function (parts) {
     const tot = U.sum(parts, (x) => x[0]) || 1;

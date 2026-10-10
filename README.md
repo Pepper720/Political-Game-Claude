@@ -47,9 +47,51 @@ export a `.json` save file or import one.
    primary challenges from a restless base, midterm penalties and the economy all feed
    into the next campaign.
 
+### Three ways to play
+
+- **Career (party)** — climb the ladder as a Democrat, Republican, Libertarian or Green.
+- **Career (independent)** — the same ladder without a party primary or party machine.
+- **Party founder** — you don't run yourself: you found and chair a new party. Name it,
+  pick a color and platform, then spend four actions a month fundraising, opening state
+  chapters, petitioning onto state ballots (signature requirements are higher in states
+  with notoriously hard ballot access), buying media, holding a convention and recruiting
+  and funding candidates for council, state legislature, U.S. House, Senate, governor and
+  President. Races use the same voter model as every other election, plus a
+  **wasted-vote penalty** that shrinks as the party gains name recognition, vote share
+  and seats. The party grows from *Fringe movement* to *Minor*, *Established* and
+  finally *Major party*; an election-night report shows every race you contested. Expect
+  a long climb — first seats usually take several cycles.
+
+### Governing is a fight
+
+Bills now pass through visible stages (introduced → committee → floor → other chamber →
+desk). Along the way:
+
+- **Hearings** build the record and can win over a wavering committee.
+- Hostile committee chairs may attach **poison pills** — pay-for offsets, unrelated
+  riders, sunset clauses. Strip them on the floor (costs capital, may fail) or live with
+  them (a sunset law expires; an offset cuts its effect).
+- Close votes produce **holdouts** with demands: scale the bill back, fund a district
+  project, or promise your vote on their bill later. Promises become **IOUs** — keep them
+  or that member (and the chamber) remembers.
+- Status-quo bias is stronger, so most bills die; snubbing colleagues costs you later.
+
+### Personality matters on the job
+
+Traits and background now change how you govern, not just how you campaign: charismatic
+officials persuade and give better addresses, workhorses get an extra action per month,
+dealmakers' side deals cost less, firebrands energize the base but alienate colleagues,
+lawyers defend laws in court better, teachers get more out of education policy, and so
+on. The *Office* tab lists every active modifier and where it comes from. Trait-specific
+events can also fire.
+
+### Difficulty
+
 Difficulty (*Forgiving / Normal / Hard*) changes how forgiving the simulation is —
 poll noise, opponent quality, scandal frequency, how hard bad news hits, starting money,
-election-day error and political capital — never the rules.
+election-day error, political capital and how stubborn legislatures are — never the
+rules. You can change it at any time from *Settings*; the change is logged in your
+history.
 
 The in-game **How it works** page lists the real-world rules modeled and every major
 simplification.
@@ -125,7 +167,11 @@ Everything below is plain data; no engine changes needed.
   `enthusiasm`, `ground`, `budgetPct`, `spendingPct: { cat, pct }`, `outcomes: { key: n }`,
   `economy: { growth, unemployment, inflation }` (+ `national: true`), `presApproval`,
   `flags: { set, clear }`, `scandal: { severity, text }`, `echo: { event, months: [a, b], chance }`,
-  plus specials `fireCabinet`, `redistrict`, `nuclear`.
+  plus specials `fireCabinet`, `redistrict`, `nuclear`. Party-founder events can use
+  `partyFunds`, `partyRec`, `partyFav`, `partyMembers` and `partyIdeo`.
+- Extra `when` conditions: `traits: [...]` (player has any of them) and `minStatus`
+  (party status, e.g. `'minor'`). `phase: ['party']` targets party-founder mode, and
+  `{party}` is the party's name in text.
 
 `node tests/run.js data` validates group, bloc, outcome and echo references.
 

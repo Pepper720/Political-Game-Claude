@@ -123,6 +123,31 @@
         'Interest groups are fictional composites with tag-based policy preferences. No real organization is depicted.',
         'All people in the game are fictional. No real politician appears.',
       ] },
+    { title: 'Third parties and party building',
+      real: [
+        'New parties must petition onto each state\'s ballot; requirements vary enormously, and states such as California, New York, Texas and North Carolina are notoriously hard while others are comparatively easy.',
+        'Under first-past-the-post, voters often avoid "wasting" a vote on a party that cannot win (Duverger\'s law), so third parties underperform their sympathizers.',
+        'Third-party success is usually built bottom-up: local and state legislative seats, concentrated in places where the brand is known, before statewide or federal wins.',
+        'Spoiler accusations, debate-exclusion thresholds, fusion offers and factional splits are recurring real pressures on minor parties.',
+      ],
+      simplified: [
+        'Signature requirements are a percentage of population in three tiers rather than each state\'s exact statute; parties keep ballot lines by reaching 2% of the vote anywhere they ran.',
+        'The wasted-vote effect is a single penalty that shrinks with name recognition, recent vote share and seats held.',
+        'You run the party as a whole; individual nominees are generated, and other parties\' candidates use the normal opponent model.',
+        'Formal coalitions and power-sharing deals between parties in a chamber are not modeled.',
+        'A single petition drive spends at most half the treasury on paid circulators; opponents\' signature challenges throw out a random 5–20%.',
+      ] },
+    { title: 'Getting bills through',
+      real: [
+        'Most introduced bills never become law; committees, chairs and floor leaders decide what gets a vote.',
+        'Committee chairs and opponents add amendments that make bills harder to pass or less effective — offsets, unrelated riders and sunset clauses are all common.',
+        'Wavering members trade their votes for district projects, changes to the bill, or future support (logrolling).',
+      ],
+      simplified: [
+        'Poison pills are drawn from a short list; stripping one is a single capital-costing roll.',
+        'Holdouts appear only on close votes for bills you back, at most three at a time, each with one demand.',
+        'Personality effects are fixed modifiers from traits, background and stats rather than emergent behavior.',
+      ] },
     { title: 'Even-handedness',
       real: [
         'Policy effects reflect commonly argued tradeoffs on both sides: costs, benefits, legal risk, and who gains or loses.',

@@ -88,7 +88,7 @@
   function setLeadership(state, ch) {
     if (ch.partisan) {
       const counts = { D: 0, R: 0 };
-      ch.members.forEach((m) => { if (counts[m.party] !== undefined) counts[m.party]++; });
+      ch.members.forEach((m) => { if (counts[m.party] !== undefined) counts[m.party]++; else if (m.party === 'P') counts.P = (counts.P || 0) + 1; });
       ch.counts = counts;
       if (counts.D === counts.R) ch.majority = ch.tieBreakParty || 'D';
       else ch.majority = counts.R > counts.D ? 'R' : 'D';
@@ -242,7 +242,7 @@
     const econ = n.economy;
     const econScore = (econ.growth - 2) * 1.2 - (econ.unemployment - 4.5) * 1.0 - Math.max(0, econ.inflation - 2.5) * 1.1;
     const presStanding = (p.approval - 47) * 0.35 + econScore * 0.6;
-    const sign = p.party === 'D' ? -1 : 1; // good standing helps the president's party
+    const sign = p.party === 'D' ? -1 : p.party === 'R' ? 1 : 0; // good standing helps the president's party
     const year = state.date.year;
     const midterm = year % 4 === 2 ? 1.0 : 0;
     // Midterm penalty for the president's party (~historical average swing).
@@ -259,7 +259,8 @@
 
   function chamberControlSummary(ch) {
     if (!ch.partisan) return 'Nonpartisan body';
-    return (ch.majority === 'D' ? 'Democratic' : 'Republican') + ' majority ' + Math.max(ch.counts.D, ch.counts.R) + '–' + Math.min(ch.counts.D, ch.counts.R);
+    const third = ch.counts.P ? ', ' + ch.counts.P + ' ' + ((PG.data.parties.P && PG.data.parties.P.short) || 'third party') : '';
+    return (ch.majority === 'D' ? 'Democratic' : 'Republican') + ' majority ' + Math.max(ch.counts.D, ch.counts.R) + '–' + Math.min(ch.counts.D, ch.counts.R) + third;
   }
 
   /* After each census, the home state redraws its maps. Whoever controls the process

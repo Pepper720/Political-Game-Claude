@@ -40,7 +40,7 @@ function loadPlaywright() {
     await page.click('text=Begin career');
     await page.screenshot({ path: path.join(outDir, tag + '-03-career.png'), fullPage: true });
     // Declare for city council.
-    const run = page.locator('tr:has-text("City Council Member") button:has-text("Run")');
+    const run = page.locator('.card.office:has(h3:text-is("City Council Member")) button:has-text("Run")');
     await run.click();
     let shots = 0;
     for (let i = 0; i < months; i++) {
@@ -107,7 +107,7 @@ function loadPlaywright() {
       s.player.history.push({ officeId: 'us_senate', start: { year: 2021, month: 1 }, end: { year: 2027, month: 1 } });
       PG.ui.game = s; PG.ui.view = 'game'; PG.ui.tab = 'career'; PG.ui.render();
     });
-    await page.locator('tr:has-text("President of the United States") button:has-text("Run")').click();
+    await page.locator('.card.office:has(h3:text-is("President of the United States")) button:has-text("Run")').click();
     await page.click('.actionbar button:has-text("Skip to campaign")').catch(() => {});
     let shotN = 0, generalShot = false;
     for (let i = 0; i < 40; i++) {

@@ -366,7 +366,7 @@
     const diff = PG.data.difficulty[state.difficulty];
     for (const [pid, c] of Object.entries(g.cabinet)) {
       if (!c) continue;
-      if (R.chance(state, c.scandalRisk * diff.scandalRate)) {
+      if (R.chance(state, c.scandalRisk * diff.scandalRate * PG.character.jobMods(state).scandalMult)) {
         PG.events.trigger(state, 'cabinet_scandal', { member: c.name, position: c.positionName, posId: pid });
         return;
       }
@@ -385,7 +385,7 @@
     p.capital -= 3;
     const recent = g.lastAddress && U.monthsBetween(g.lastAddress, state.date) < 4;
     g.lastAddress = { ...state.date };
-    const v = recent ? 0.4 : 1.5;
+    const v = (recent ? 0.4 : 1.5) + (recent ? 0 : PG.character.jobMods(state).address);
     PG.effects.apply(state, { approval: { all: v } });
     return { ok: true, msg: recent ? 'Another address so soon had little effect.' : 'Your address landed well.' };
   }

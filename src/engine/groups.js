@@ -157,6 +157,7 @@
 
   // ----- Scandals -----
   function add(state, text, severity, kind) {
+    severity = severity * PG.character.jobMods(state).scandalMult;
     const s = { id: U.nextId(state, 'sc'), text, severity: U.round(severity, 1), kind: kind || 'event', date: { ...state.date }, heat: severity };
     state.player.scandals.push(s);
     PG.game.news(state, 'Controversy: ' + text, -2);

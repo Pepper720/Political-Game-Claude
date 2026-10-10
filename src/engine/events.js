@@ -11,10 +11,11 @@
     return Object.assign({
       name: p.name, city: state.world.home.city.name, state: PG.juris.homeState(state).name,
       office: p.office ? PG.data.officeById[p.office.officeId].short : 'candidate', opponent: opp ? opp.name : 'your opponent',
+      party: state.party ? state.party.name : (PG.data.parties[p.party] || PG.data.parties.I).name,
     }, extra || {});
   }
 
-  function phaseOf(state) { return state.campaign ? 'campaign' : state.gov ? 'governing' : 'career'; }
+  function phaseOf(state) { return state.mode === 'party' ? 'party' : state.campaign ? 'campaign' : state.gov ? 'governing' : 'career'; }
 
   function eligible(state, ev) {
     if (ev.echoOnly) return false;
@@ -38,6 +39,8 @@
     const f = state.player.flags;
     if (w.flags && !w.flags.every((x) => f[x])) return false;
     if (w.notFlags && w.notFlags.some((x) => f[x])) return false;
+    if (w.traits && !w.traits.some((t) => state.player.traits.includes(t))) return false;
+    if (w.minStatus && state.party && PG.party.STATUS.findIndex((x) => x.id === state.party.status) < PG.party.STATUS.findIndex((x) => x.id === w.minStatus)) return false;
     const fired = state.events.fired[ev.id] || 0;
     if (w.once && fired) return false;
     const last = state.events.lastMonth[ev.id];
@@ -49,7 +52,7 @@
     processEchoes(state);
     if (state.events.active) return;
     const phase = phaseOf(state);
-    const p = { governing: 0.38, campaign: 0.28, career: 0.12 }[phase];
+    const p = { governing: 0.38, campaign: 0.28, career: 0.12, party: 0.3 }[phase];
     if (!R.chance(state, p)) return;
     const pool = PG.data.events.filter((e) => eligible(state, e));
     const ev = R.weighted(state, pool, (e) => (e.when && e.when.weight) || 1);

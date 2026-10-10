@@ -56,6 +56,18 @@
       const avg = U.sum(Object.values(deltas)) / Math.max(1, Object.keys(deltas).length);
       lines.push('Approval ' + (avg >= 0 ? 'up' : 'down') + ' among ' + describeBlocs(deltas));
     }
+    if (state.party) {
+      const pp = state.party;
+      if (eff.approval !== undefined && !state.gov && !state.campaign) {
+        const v = typeof eff.approval === 'number' ? eff.approval : (eff.approval.all || 0) + (eff.approval.swing || 0) * 0.5 + (eff.approval.base || 0) * 0.3;
+        pp.brand.fav = U.clamp(pp.brand.fav + v * 0.6, 15, 85);
+      }
+      if (eff.partyFunds) { const amt = Math.round(eff.partyFunds); pp.funds = Math.max(0, pp.funds + amt); lines.push('Party funds ' + (amt >= 0 ? '+' : '−') + U.fmtMoney(Math.abs(amt))); }
+      if (eff.partyRec) { pp.brand.nameRec = U.clamp(pp.brand.nameRec + eff.partyRec, 0, 100); lines.push('Party name recognition ' + U.fmtSigned(eff.partyRec, 0)); }
+      if (eff.partyFav) { pp.brand.fav = U.clamp(pp.brand.fav + eff.partyFav, 15, 85); lines.push('Party favorability ' + U.fmtSigned(eff.partyFav, 1)); }
+      if (eff.partyMembers) { pp.members = Math.max(100, Math.round(pp.members * (1 + eff.partyMembers))); lines.push('Membership ' + U.fmtSigned(eff.partyMembers * 100, 0) + '%'); }
+      if (eff.partyIdeo) { for (const k of ['econ', 'social']) if (eff.partyIdeo[k]) pp.ideology[k] = U.clamp(pp.ideology[k] + eff.partyIdeo[k], -100, 100); state.player.ideology = { ...pp.ideology }; pp.raceMemo = {}; lines.push('Platform shifted'); }
+    }
     if (eff.record) {
       const deltas = expandApproval(state, eff.record);
       if (state.gov) for (const [b, v] of Object.entries(deltas)) state.gov.record[b] = (state.gov.record[b] || 0) + v;

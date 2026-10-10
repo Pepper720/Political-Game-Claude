@@ -683,6 +683,104 @@
         { label: 'Push renter protections', hint: 'Immediate relief; landlords and economists object', effects: { groups: { housing_adv: 6, developers: -6 }, approval: { blocs: { young: 1.5, urban_prog: 1 } } } },
         { label: 'Expand rental assistance', hint: 'Costs money', effects: { budgetPct: -0.003, outcomes: { housing: 0.5 }, approval: { blocs: { working: 1 } } } },
       ] },
+
+    // ------------------------------------------------------------- party-founder mode
+    { id: 'party_spoiler', when: { phase: ['party'] }, title: '"You\'re just a spoiler"',
+      text: 'Major-party leaders are running ads claiming a vote for {party} is a wasted vote that elects the other side.',
+      choices: [
+        { label: 'Hit back: "the two-party system is the problem"', hint: 'Energizes members; alienates the cautious', effects: { partyMembers: 0.05, partyFav: -1.5, partyRec: 2 } },
+        { label: 'Champion ranked-choice voting', hint: 'Reformers love it; a long game', effects: { groups: { reform: 10 }, partyRec: 1, partyFav: 1 } },
+        { label: 'Ignore it', hint: 'Saves energy; the narrative sticks', effects: { partyFav: -2 } },
+      ] },
+    { id: 'party_celebrity', when: { phase: ['party'] }, title: 'A celebrity wants in',
+      text: 'A famous actor wants to join {party} and headline your next rally. They also have opinions about your platform.',
+      choices: [
+        { label: 'Welcome them as a spokesperson', hint: 'Huge attention; they go off-message', effects: { partyRec: 6, partyMembers: 0.08, echo: { event: 'party_celebrity_gaffe', months: [2, 6], chance: 0.45 } } },
+        { label: 'Accept their donation, keep them offstage', hint: 'Money without the risk', effects: { partyFunds: 60000 } },
+        { label: 'Decline', hint: 'Keep the party about ideas', effects: { partyFav: 0.5 } },
+      ] },
+    { id: 'party_celebrity_gaffe', echoOnly: true, title: 'Your celebrity goes rogue',
+      text: 'Your celebrity spokesperson made an inflammatory comment on a late-night show, and reporters want to know if it reflects {party}\'s views.',
+      choices: [
+        { label: 'Distance the party', hint: 'Lose a famous friend', effects: { partyFav: -1, partyMembers: -0.03 } },
+        { label: 'Defend them', hint: 'Loyal; the clip runs for days', effects: { partyFav: -3, partyRec: 2 } },
+      ] },
+    { id: 'party_faction', when: { phase: ['party'], minStatus: 'minor' }, title: 'A faction fight',
+      text: 'A purist faction accuses leadership of selling out and threatens to walk out of the next convention unless the platform moves further from the center.',
+      choices: [
+        { label: 'Give them a platform plank', hint: 'Unity; you drift from the median voter', effects: { partyIdeo: { econ: -6, social: -6 }, partyMembers: 0.02 } },
+        { label: 'Let them walk', hint: 'Cleaner message; fewer volunteers', effects: { partyMembers: -0.1, partyFav: 1.5 } },
+        { label: 'Broker a compromise', hint: 'Costs you time and money', effects: { partyFunds: -20000 } },
+      ] },
+    { id: 'party_faction_right', when: { phase: ['party'], minStatus: 'minor' }, title: 'Hardliners push back',
+      text: 'A hardline faction demands the party stake out tougher positions or they will back a rival new party.',
+      choices: [
+        { label: 'Adopt their positions', hint: 'Keeps them; scares moderates', effects: { partyIdeo: { econ: 6, social: 6 }, partyMembers: 0.02 } },
+        { label: 'Refuse', hint: 'They leave and take donors', effects: { partyMembers: -0.08, partyFunds: -15000, partyFav: 1 } },
+      ] },
+    { id: 'party_debate_exclusion', when: { phase: ['party'] }, title: 'Locked out of the debates',
+      text: 'The debate commission requires 15% in national polls to qualify. {party}\'s candidates aren\'t close.',
+      choices: [
+        { label: 'Sue the commission', hint: 'Long odds, good press', chance: { p: 0.25, success: { partyRec: 8, outcome: 'A judge ordered your candidate included in one debate!' }, fail: { partyFunds: -30000, partyRec: 2, outcome: 'The suit failed, but it made the news.' } } },
+        { label: 'Hold your own livestreamed debate', hint: 'Cheap; small audience', effects: { partyRec: 2, partyFunds: -5000 } },
+        { label: 'Focus on local races instead', hint: 'No splash', effects: { partyFav: 0.5 } },
+      ] },
+    { id: 'party_fusion', when: { phase: ['party'] }, title: 'An offer to merge tickets',
+      text: 'A major party offers to cross-endorse some of your candidates if you stand down in close races they need.',
+      choices: [
+        { label: 'Take the deal', hint: 'Seats now; independence questioned', effects: { partyFav: -1.5, partyFunds: 25000, partyMembers: -0.03 } },
+        { label: 'Refuse: we run everywhere', hint: 'Purity; spoiler charges', effects: { partyMembers: 0.03, partyFav: -0.5 } },
+      ] },
+    { id: 'party_donor', when: { phase: ['party'] }, title: 'A big check with strings',
+      text: 'A billionaire offers to bankroll {party} — if you drop a plank they dislike.',
+      choices: [
+        { label: 'Take the money and drop the plank', hint: 'Funds now; members feel betrayed', effects: { partyFunds: 150000, partyMembers: -0.06, partyFav: -1 } },
+        { label: 'Refuse publicly', hint: 'Grassroots cred', effects: { partyMembers: 0.04, partyRec: 1.5 } },
+      ] },
+    { id: 'party_chapter_scandal', when: { phase: ['party'], minStatus: 'minor' }, title: 'Chapter treasurer embezzles',
+      text: 'A state chapter treasurer drained the chapter\'s account. The local paper is asking how it happened.',
+      choices: [
+        { label: 'Full audit and new financial controls', hint: 'Costs money; restores trust', effects: { partyFunds: -12000, partyFav: 0.5 } },
+        { label: 'Quietly replace them', hint: 'Cheap; may leak', chance: { p: 0.6, success: { outcome: 'It stayed quiet.' }, fail: { partyFav: -3, outcome: 'It leaked, along with the cover-up.' } } },
+      ] },
+
+    // ------------------------------------------------------------- personality at work
+    { id: 'firebrand_clash', when: { phase: G, traits: ['firebrand'] }, title: 'Your temper on camera',
+      text: 'You tore into a colleague during a hearing. The base loves the clip; colleagues are fuming.',
+      choices: [
+        { label: 'Double down', hint: 'Base surges; relationships crater', effects: { approval: { base: 2, swing: -1 }, legRel: -6 } },
+        { label: 'Apologize privately', hint: 'Mend fences; base disappointed', effects: { legRel: 3, approval: { base: -0.5 } } },
+      ] },
+    { id: 'wonk_report', when: { phase: G, traits: ['wonk'] }, title: 'Your white paper gets noticed',
+      text: 'Your 80-page policy analysis is being cited by experts across the spectrum.',
+      choices: [
+        { label: 'Turn it into a bill', hint: 'Capital to work with', effects: { capital: 5, media: 2 } },
+        { label: 'Brief colleagues privately', hint: 'Build relationships', effects: { legRel: 4 } },
+      ] },
+    { id: 'dealmaker_offer', when: { phase: G, traits: ['dealmaker'] }, title: 'A grand bargain on the table',
+      text: 'Leaders from both parties quietly ask you to broker a compromise on a stalled issue.',
+      choices: [
+        { label: 'Broker it', hint: 'Respect across the aisle; your base grumbles', effects: { legRel: 6, capital: 4, approval: { swing: 1.5, base: -1 } } },
+        { label: 'Decline', hint: 'Stay out of it', effects: {} },
+      ] },
+    { id: 'charisma_viral', when: { phase: G, traits: ['charismatic', 'telegenic'] }, title: 'A speech goes viral',
+      text: 'A passionate floor speech you gave is racking up millions of views.',
+      choices: [
+        { label: 'Ride the wave with national interviews', hint: 'Name recognition; colleagues call you a showhorse', effects: { nameRec: 5, legRel: -2, approval: { all: 1 } } },
+        { label: 'Stay focused on your district', hint: 'Modest, grounded', effects: { approval: { all: 0.6 } } },
+      ] },
+    { id: 'maverick_break', when: { phase: G, traits: ['maverick'], partisan: true }, title: 'Leadership demands loyalty',
+      text: 'Your party leader warns that if you break ranks on the next big vote, you\'ll lose your committee seat.',
+      choices: [
+        { label: 'Vote your conscience anyway', hint: 'Independents admire you; leadership retaliates', effects: { partyRel: -10, approval: { swing: 2 } } },
+        { label: 'Fall in line this time', hint: 'Keep your seat; your brand suffers', effects: { partyRel: 5, approval: { swing: -1 } } },
+      ] },
+    { id: 'checkered_resurface', when: { phase: ['governing', 'campaign'], traits: ['checkered'] }, title: 'An old story resurfaces',
+      text: 'A tabloid dug up an embarrassing episode from your past.',
+      choices: [
+        { label: 'Own it: "I\'ve grown"', hint: 'Humanizing; some damage', effects: { fav: -1, approval: { all: -0.8 }, media: 1 } },
+        { label: 'Refuse to discuss it', hint: 'Story lingers', effects: { scandal: { severity: 2, text: 'Old episode resurfaces' } } },
+      ] },
   ];
   PG.data.eventById = Object.fromEntries(PG.data.events.map((e) => [e.id, e]));
 })(globalThis.PG = globalThis.PG || {});

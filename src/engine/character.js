@@ -159,5 +159,40 @@
 
   function partyName(party) { return (PG.data.parties[party] || PG.data.parties.I).name; }
 
-  PG.character = { STAT_KEYS, createPlayer, eligibility, termLimitBlock, termsServed, yearsServed, yearsCommitted, consecutiveTerms, ageAt, stat, partyName, currentRank };
+  /* How the player's personality (traits, background, skills) changes the job of
+   * governing. Returns numeric modifiers plus plain-English lines for the UI. */
+  const JOB_KEYS = ['persuade', 'townhall', 'address', 'policyEff', 'markup', 'courtDefense', 'fundraise', 'actions', 'capital', 'scandal',
+    'base', 'colleagues', 'deal', 'dealCost', 'defection', 'schedule', 'media', 'constituent'];
+  function jobMods(state) {
+    const p = state.player;
+    const m = { outcome: {}, cats: [], lines: [] };
+    JOB_KEYS.forEach((k) => { m[k] = 0; });
+    const addJob = (job, source) => {
+      if (!job) return;
+      for (const k of JOB_KEYS) if (typeof job[k] === 'number') m[k] += job[k];
+      if (job.outcome) m.outcome[job.outcome] = (m.outcome[job.outcome] || 0) + 3;
+      if (job.cat) m.cats.push(job.cat);
+      if (job.desc) m.lines.push({ source, text: job.desc });
+    };
+    for (const t of p.traits) addJob(PG.data.traitById[t].job, PG.data.traitById[t].name);
+    const bg = PG.data.backgroundById[p.background];
+    addJob(bg.job, bg.name);
+    // Skills matter too.
+    const st = (k) => stat(state, k);
+    const sk = {
+      persuade: (st('charisma') - 50) / 200, policyEff: (st('policy') - 50) / 300, capital: (st('organizing') - 50) / 60,
+      scandal: -(st('discipline') - 50) / 250, fundraise: (st('fundraising') - 50) / 150, townhall: (st('charisma') - 50) / 300,
+    };
+    for (const [k, v] of Object.entries(sk)) m[k] += v;
+    const notes = [];
+    if (Math.abs(sk.persuade) >= 0.05) notes.push('charisma ' + (sk.persuade > 0 ? 'boosts' : 'weakens') + ' your persuasion');
+    if (Math.abs(sk.policyEff) >= 0.04) notes.push('policy skill ' + (sk.policyEff > 0 ? 'strengthens' : 'weakens') + ' the laws you write');
+    if (Math.abs(sk.capital) >= 0.2) notes.push('organizing ' + (sk.capital > 0 ? 'speeds' : 'slows') + ' political capital');
+    if (Math.abs(sk.scandal) >= 0.05) notes.push('discipline makes scandals ' + (sk.scandal < 0 ? 'softer' : 'harsher'));
+    if (notes.length) m.lines.push({ source: 'Your skills', text: U.cap(notes.join('; ')) + '.' });
+    m.scandalMult = U.clamp(1 + m.scandal, 0.4, 2);
+    return m;
+  }
+
+  PG.character = { jobMods, JOB_KEYS, STAT_KEYS, createPlayer, eligibility, termLimitBlock, termsServed, yearsServed, yearsCommitted, consecutiveTerms, ageAt, stat, partyName, currentRank };
 })(globalThis.PG = globalThis.PG || {});

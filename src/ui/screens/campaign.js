@@ -24,6 +24,8 @@
       const el = document.getElementById('daysUsed');
       if (el) { el.textContent = used + ' / ' + days + ' days'; el.className = used > days ? 'bad' : used === days ? 'good' : 'warn'; }
       for (const k of PG.campaign.DAY_KEYS) { const v = document.getElementById('dv-' + k); if (v) v.textContent = d.days[k]; }
+      const bar = document.getElementById('dayBar');
+      if (bar) bar.innerHTML = PG.campaign.DAY_KEYS.filter((k) => d.days[k] > 0).map((k) => '<div style="flex:' + d.days[k] + ';background:' + DAY_COLORS[k] + '" title="' + PG.campaign.DAY_LABELS[k] + ': ' + d.days[k] + '">' + (d.days[k] >= 2 ? k : '') + '</div>').join('');
       const tot = (Number(d.adsPct) || 0) + (Number(d.fieldPct) || 0) + (Number(d.oppoPct) || 0);
       const sp = document.getElementById('spendTot');
       if (sp) { sp.textContent = tot + '% of cash (≈' + U.fmtMoney(pc.cash * tot / 100) + ' at today\'s balance)'; sp.className = tot > 100 ? 'bad' : ''; }
@@ -33,8 +35,10 @@
     h += '<p class="muted">' + esc(PG.juris.describe(g, c.key)) + ' · lean ' + U.fmtLean(PG.campaign.electorate(g).lean) + ' · ' + (o.partisan ? 'partisan' : 'nonpartisan') + (o.seats > 1 ? ' · ' + o.seats + ' seats (top ' + o.seats + ' win)' : '') + ' · typical winning budget ' + U.fmtMoney(T) + '</p>';
     if (c.pres) h += ui.screens.presPanel(g);
     if (c.ballot) h += '<div class="card ' + (c.ballot.collected < c.ballot.required ? 'alert' : '') + '"><b>Ballot access:</b> ' + c.ballot.collected.toLocaleString() + ' / ' + c.ballot.required.toLocaleString() + ' valid signatures (due ' + U.fmtDate(c.info.filingDeadline) + '). Ground-organizing days and field spending collect signatures.</div>';
+    h += campaignBrief(g);
     // Schedule
-    h += '<div class="card"><div class="row between"><h2>This month\'s schedule</h2><b id="daysUsed"></b></div><p class="small muted">You have ' + days + ' campaign days' + (g.player.office ? ' (official duties take the rest)' : '') + '. Overwork builds fatigue, which raises gaffe risk and dulls your charisma.</p><div class="grid g2">';
+    h += '<div class="card"><div class="row between"><h2>📅 This month\'s schedule</h2><b id="daysUsed"></b></div><div class="row" style="margin-bottom:8px"><span class="small muted">Presets:</span>' +
+      Object.entries(PRESETS).map(([k, v]) => '<button class="small" data-cmd="planPreset" data-arg="' + k + '" title="' + esc(v.desc) + '">' + esc(v.name) + '</button>').join('') + '</div><div id="dayBar" class="daybar"></div><p class="small muted">You have ' + days + ' campaign days' + (g.player.office ? ' (official duties take the rest)' : '') + '. Overwork builds fatigue, which raises gaffe risk and dulls your charisma.</p><div class="grid g2">';
     const hints = {
       fundraising: 'Big checks — and big donors expect access', digital: 'Small donors; ideological intensity and momentum help', retail: 'Doors, diners, town halls: name ID and targeted blocs (strong in small districts)',
       media: 'Interviews and press: name ID at scale, gaffe risk', ground: 'Recruit volunteers, build turnout operation', policy: 'Policy credibility; needed for rollouts (2+ days)', prep: 'Improves your next debate', rest: 'Recover from fatigue',
@@ -71,6 +75,46 @@
     }
     return h;
   };
+
+  const PRESETS = {
+    balanced: { name: 'Balanced', desc: 'A bit of everything', days: { fundraising: 5, digital: 2, retail: 4, media: 2, ground: 3, policy: 2, prep: 0, rest: 2 }, adsPct: 35, fieldPct: 10 },
+    money: { name: 'Money push', desc: 'Build a war chest for the final stretch', days: { fundraising: 10, digital: 4, retail: 2, media: 1, ground: 1, policy: 0, prep: 0, rest: 2 }, adsPct: 10, fieldPct: 5 },
+    doors: { name: 'Doors & ground', desc: 'Retail and turnout; best in small districts', days: { fundraising: 3, digital: 1, retail: 7, media: 1, ground: 6, policy: 0, prep: 0, rest: 2 }, adsPct: 20, fieldPct: 25 },
+    air: { name: 'Air war', desc: 'Media and ads; best in big jurisdictions', days: { fundraising: 5, digital: 3, retail: 1, media: 6, ground: 1, policy: 2, prep: 0, rest: 2 }, adsPct: 60, fieldPct: 5 },
+    debate: { name: 'Debate camp', desc: 'Prep for an upcoming debate', days: { fundraising: 4, digital: 2, retail: 2, media: 1, ground: 2, policy: 2, prep: 6, rest: 1 }, adsPct: 30, fieldPct: 10 },
+  };
+  const DAY_COLORS = { fundraising: '#2f9e44', digital: '#74b816', retail: '#1c7ed6', media: '#7048e8', ground: '#f08c00', policy: '#0c8599', prep: '#c2255c', rest: '#adb5bd' };
+  ui.commands.planPreset = (k) => {
+    const pr = PRESETS[k], d = ui.drafts.plan;
+    const days = PG.campaign.daysAvailable(ui.game);
+    d.days = Object.assign({}, pr.days);
+    let tot = U.sum(Object.values(d.days));
+    if (tot < days) d.days.rest += days - tot;
+    while (tot > days) { const big = Object.keys(d.days).sort((a, b) => d.days[b] - d.days[a])[0]; d.days[big]--; tot--; }
+    d.adsPct = pr.adsPct; d.fieldPct = pr.fieldPct;
+    const r = PG.game.act(ui.game, { type: 'campaign.setPlan', plan: d });
+    ui.toast(r.ok ? pr.name + ' plan saved.' : r.msg);
+    PG.storage.autosave(ui.game);
+    ui.render();
+  };
+
+  function campaignBrief(g) {
+    const c = g.campaign, pc = PG.campaign.playerCand(g);
+    const tips = [];
+    const last = c.polls.find((p) => p.stage === c.stage);
+    if (last) {
+      const mine = last.results.player, best = Math.max.apply(null, Object.entries(last.results).filter(([k]) => k !== 'player').map(([, v]) => v).concat([0]));
+      tips.push([mine >= best ? '📈' : '📉', 'Latest poll (' + last.sponsor + '): you ' + mine.toFixed(0) + '% vs. ' + best.toFixed(0) + '% for your top rival, ±' + last.moe + '.']);
+    } else tips.push(['📊', 'No public polls yet. An internal poll shows where you stand, bloc by bloc.']);
+    if (pc.nameRec < 35) tips.push(['📣', 'Most voters don\'t know you (' + Math.round(pc.nameRec) + '% name recognition). Retail, media and positive ads fix that.']);
+    if (pc.cash < c.typicalBudget * 0.05) tips.push(['💰', 'You are low on money. Shift days to call time or digital.']);
+    if (g.player.fatigue > 25) tips.push(['😴', 'You are exhausted — schedule rest days to avoid gaffes.']);
+    const deb = c.debates.find((x) => !x.held && x.stage === c.stage && U.monthsBetween(g.date, x.date) <= 1);
+    if (deb) tips.push(['🎤', deb.label + ' is coming up — prep days help.']);
+    if (!c.rolloutThisMonth && (c.plan.days.policy || 0) >= 2) tips.push(['📜', 'You scheduled policy days: roll out a plan below to win over voters who agree.']);
+    if (c.oppoFile.some((x) => !x.released)) tips.push(['🗂️', 'Your opposition file has unreleased material.']);
+    return '<div class="card brief"><h3>Campaign briefing</h3><ul class="icons">' + tips.slice(0, 5).map(([i, t]) => '<li><span aria-hidden="true">' + i + '</span>' + esc(t) + '</li>').join('') + '</ul></div>';
+  }
 
   function debatesNote(g) {
     const c = g.campaign;

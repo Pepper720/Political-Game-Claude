@@ -40,7 +40,7 @@
   function strikeProb(state, cs, stage) {
     const lean = courtLean(state, cs.forum === 'fed' ? 'federal' : 'state', stage);
     const dir = U.clamp((cs.ideo.econ + cs.ideo.social) / 2 / 45, -1, 1);
-    const p = cs.vuln * (1 + 0.9 * (-lean * dir)) - (cs.defense || 0);
+    const p = cs.vuln * (1 + 0.9 * (-lean * dir)) - (cs.defense || 0) - (cs.playerOwned ? PG.character.jobMods(state).courtDefense : 0);
     return U.clamp(p, 0.02, 0.95);
   }
 

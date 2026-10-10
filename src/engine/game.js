@@ -12,8 +12,15 @@
       campaign: null, gov: null, electionNight: null, log: [], news: [], groups: {}, media: {},
       events: { active: null, queue: [], fired: {}, lastMonth: {}, echoes: [] }, history: { approval: [], polls: [] }, stats: { months: 0 },
     };
+    state.mode = setup.mode === 'party' ? 'party' : 'career';
+    if (state.mode === 'party') {
+      // Placeholder so character creation accepts the new party; filled in by PG.party.create.
+      PG.data.parties.P = { id: 'P', name: setup.partyName || 'New Party', short: 'NEW', adj: setup.partyName || 'New Party', color: '#e07b18', norm: { econ: 0, social: 0 }, custom: true, strength: 0 };
+      setup = Object.assign({}, setup, { party: 'P' });
+    }
     PG.character.createPlayer(state, setup);
     PG.world.createWorld(state, setup);
+    if (state.mode === 'party') PG.party.create(state, setup);
     PG.groups.init(state);
     if (PG.courts) PG.courts.init(state);
     PG.economy.monthly(state);
@@ -44,13 +51,14 @@
     const b = blockers(state);
     if (b) return { ok: false, msg: b };
     const p = state.player;
+    if (state.mode === 'party') PG.party.monthly(state);
     if (state.campaign) PG.campaign.processMonth(state);
     if (state.gov) PG.gov.monthly(state, !!state.campaign);
     if (PG.courts) PG.courts.monthly(state);
     PG.economy.monthly(state);
     aiExecutives(state);
     PG.world.updateEnvironment(state);
-    if (state.date.month === 11) worldElections(state);
+    if (state.date.month === 11) worldElections(state, state.mode === 'party' ? PG.party.elections(state) : null);
     PG.scandals.decay(state);
     if (!state.campaign) p.fatigue = U.round(p.fatigue * 0.6, 1);
     if (!state.campaign && !state.gov) idleMonth(state);
@@ -88,9 +96,9 @@
       const r = PG.campaign.start(state, p.declared.officeId);
       if (!r.ok) { log(state, 'career', 'Could not launch your campaign: ' + r.msg); p.declared = null; }
     }
-    if (p.retiring && !p.office && !state.campaign) endGame(state, 'retired');
+    if (p.retiring && !p.office && !state.campaign && state.mode !== 'party') endGame(state, 'retired');
     if (U.age(state) >= 88 && !p.office && !state.campaign) endGame(state, 'age');
-    state.phase = state.phase === 'gameover' ? 'gameover' : state.campaign ? 'campaign' : p.office ? 'governing' : 'career';
+    state.phase = state.phase === 'gameover' ? 'gameover' : state.mode === 'party' ? 'party' : state.campaign ? 'campaign' : p.office ? 'governing' : 'career';
   }
 
   function applyPendingSeat(state) {
@@ -127,7 +135,8 @@
   }
 
   /* November: every race the player isn't in is decided by fundamentals. */
-  function worldElections(state) {
+  function worldElections(state, protectedSeats) {
+    const prot = protectedSeats || new Set();
     const y = state.date.year;
     const p = state.player;
     const env = state.world.national.environment;
@@ -135,7 +144,7 @@
     const st = PG.juris.homeState(state);
     const summary = [];
     // President.
-    if (y % 4 === 0 && running !== 'president' && !(p.office && p.office.officeId === 'president')) {
+    if (y % 4 === 0 && running !== 'president' && !(p.office && p.office.officeId === 'president') && !(state.party && state.party.presidentialRun && state.party.presidentialRun.year === y)) {
       const pr = state.world.executives.president;
       const open = (pr.termNumber || 1) >= 2;
       const incAdv = open ? 0 : 3;
@@ -153,7 +162,7 @@
       state.world.chambers.us_senate.tieBreakParty = state.world.executives.president.party;
     }
     // Governor and mayor races.
-    if (!st.isDC && PG.calendar.onBallot(state, 'governor', y) && running !== 'governor' && !(p.office && p.office.officeId === 'governor')) {
+    if (!st.isDC && PG.calendar.onBallot(state, 'governor', y) && running !== 'governor' && !(p.office && p.office.officeId === 'governor') && !prot.has('governor')) {
       execRace(state, 'governor', st.lean + env * 0.6, summary);
     }
     if (PG.calendar.onBallot(state, 'mayor', y) && running !== 'mayor' && !(p.office && p.office.officeId === 'mayor')) {
@@ -161,15 +170,15 @@
     }
     // Legislatures.
     if (y % 2 === 0) {
-      chamberElections(state, 'us_house', () => true, env, summary);
-      chamberElections(state, 'us_senate', (m) => m.senateClass === PG.calendar.senateClassUp(PG.data.stateById[m.state], y), env, summary);
+      chamberElections(state, 'us_house', (m, i) => !prot.has('us_house:' + i), env, summary);
+      chamberElections(state, 'us_senate', (m, i) => !prot.has('us_senate:' + i) && m.senateClass === PG.calendar.senateClassUp(PG.data.stateById[m.state], y), env, summary);
     }
     const oddLeg = PG.calendar.ODD_YEAR_LEGISLATURES.includes(st.id);
     if (!st.isDC && (y % 2 === 1) === oddLeg) {
-      if (state.world.chambers.state_house) chamberElections(state, 'state_house', () => st.houseTerm === 2 || R.chance(state, 0.5), env * 0.7, summary);
-      chamberElections(state, 'state_senate', () => st.senateTerm === 2 || R.chance(state, 0.5), env * 0.7, summary);
+      if (state.world.chambers.state_house) chamberElections(state, 'state_house', (m, i) => !prot.has('state_house:' + i) && (st.houseTerm === 2 || R.chance(state, 0.5)), env * 0.7, summary);
+      chamberElections(state, 'state_senate', (m, i) => !prot.has('state_senate:' + i) && (st.senateTerm === 2 || R.chance(state, 0.5)), env * 0.7, summary);
     }
-    if (y % 2 === 1) chamberElections(state, 'council', () => R.chance(state, 0.5), env * 0.2, summary);
+    if (y % 2 === 1) chamberElections(state, 'council', (m, i) => !prot.has('council:' + i) && R.chance(state, 0.5), env * 0.2, summary);
     if (summary.length) log(state, 'world', 'Election results around the country and state.', summary);
   }
 
@@ -194,7 +203,7 @@
     const before = ch.partisan ? { ...ch.counts } : null;
     for (let i = 0; i < ch.members.length; i++) {
       const m = ch.members[i];
-      if (m.isPlayer || !filter(m)) continue;
+      if (m.isPlayer || !filter(m, i)) continue;
       if (state.campaign && PG.juris.bodyFor(state, state.campaign.officeId) === chId && PG.world.seatIndexFor(state, chId) === i) continue;
       const retiring = R.chance(state, 0.06 + (m.seniority > 18 ? 0.12 : 0));
       const inc = retiring ? 0 : 4 + m.seniority * 0.1;
@@ -203,6 +212,12 @@
       if (!ch.partisan) {
         if (retiring || R.chance(state, 0.15)) replaceMember(state, ch, i, winner);
         else m.seniority += 2;
+        continue;
+      }
+      if (m.party === 'P') {
+        // Third-party incumbents hold on through personal brand; the wasted-vote penalty fades once elected.
+        const s = PG.data.parties.P ? PG.data.parties.P.strength : 0;
+        if (retiring || R.chance(state, 0.32 - s * 0.2)) replaceMember(state, ch, i, winner); else m.seniority += 2;
         continue;
       }
       if (retiring || winner !== m.party) replaceMember(state, ch, i, winner);
@@ -254,6 +269,7 @@
 
   function retire(state) {
     const p = state.player;
+    if (state.mode === 'party') { endGame(state, 'retired'); return { ok: true, msg: 'You stepped down as party chair.' }; }
     if (state.campaign) PG.campaign.endCampaign(state, false, 'Withdrew.');
     if (p.office) {
       p.retiring = true;
@@ -272,6 +288,7 @@
   }
 
   function legacyScore(state) {
+    if (state.mode === 'party') return PG.party.legacyScore(state);
     const p = state.player;
     let s = 0;
     for (const h of p.history) {
@@ -281,6 +298,17 @@
     }
     s += p.legacy.laws.length * 15 + U.sum(p.legacy.elections, (e) => (e.won ? 10 : 0));
     return Math.round(s);
+  }
+
+  // Difficulty can change mid-game: only tuning parameters change, never rules.
+  function setDifficulty(state, level) {
+    if (!PG.data.difficulty[level]) return { ok: false, msg: 'Unknown difficulty.' };
+    if (state.difficulty === level) return { ok: true, msg: 'Already on ' + PG.data.difficulty[level].name + '.' };
+    const from = PG.data.difficulty[state.difficulty].name;
+    state.difficulty = level;
+    state.stats.difficultyChanges = (state.stats.difficultyChanges || 0) + 1;
+    log(state, 'career', 'Difficulty changed from ' + from + ' to ' + PG.data.difficulty[level].name + '.');
+    return { ok: true, msg: 'Difficulty set to ' + PG.data.difficulty[level].name + '.' };
   }
 
   // ------------------------------------------------------------- dispatcher
@@ -313,6 +341,11 @@
         case 'gov.stance': return PG.leg.setStance(state, a.billId, a.stance);
         case 'gov.vote': return PG.leg.castVote(state, a.billId, a.v);
         case 'gov.reconcile': return PG.leg.requestReconciliation(state, a.billId);
+        case 'gov.strip': return PG.leg.stripPill(state, a.billId);
+        case 'gov.holdout': return PG.leg.resolveHoldout(state, a.billId, a.memberId, !!a.accept);
+        case 'gov.hearing': return PG.leg.holdHearing(state, a.billId);
+        case 'settings.difficulty': return setDifficulty(state, a.level);
+        case 'party.act': return PG.party.act(state, a.kind, a.arg);
         case 'gov.discharge': return PG.leg.discharge(state, a.billId);
         case 'gov.bury': return PG.leg.bury(state, a.billId);
         case 'gov.sign': return PG.leg.sign(state, a.billId);
@@ -342,5 +375,5 @@
     }
   }
 
-  PG.game = { newGame, log, news, advanceMonth, act, declare, fastForward, retire, endGame, legacyScore, worldElections, blockers };
+  PG.game = { setDifficulty, newGame, log, news, advanceMonth, act, declare, fastForward, retire, endGame, legacyScore, worldElections, blockers };
 })(globalThis.PG = globalThis.PG || {});

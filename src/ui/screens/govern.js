@@ -9,7 +9,9 @@
     const gv = g.gov, p = g.player;
     const o = PG.data.officeById[gv.officeId];
     const e = PG.juris.electorate(g, gv.key);
-    let h = '<h1>' + esc(o.name) + '</h1><p class="muted">' + esc(e.name) + ' · term ' + p.office.termNumber + ', ends ' + esc(U.fmtDate(p.office.termEnd)) + ' · ' + U.plural(gv.monthsInOffice, 'month') + ' in office</p>';
+    const band = p.party === 'D' ? 'var(--dem)' : p.party === 'R' ? 'var(--rep)' : 'var(--ind)';
+    let h = '<div class="hero" style="--hero:' + band + '"><div><p class="eyebrow">' + esc(e.name) + '</p><h1>' + esc(o.name) + '</h1><p>Term ' + p.office.termNumber + ' · ends ' + esc(U.fmtDate(p.office.termEnd)) + ' · ' + U.plural(gv.monthsInOffice, 'month') + ' in office</p></div><div class="hero-stat"><b>' + Math.round(gv.approval.overall) + '%</b><span>approval</span></div></div>';
+    h += briefing(g);
     if (gv.decision === 'pending') {
       const info = PG.calendar.electionInfo(g, gv.officeId, p.office.termEnd.year - 1);
       const block = PG.character.termLimitBlock(g, gv.officeId);
@@ -29,6 +31,7 @@
     h += '<div class="card"><h3>Conditions in ' + esc(e.name) + '</h3><p class="small muted">Outcomes follow funding relative to need, enacted laws, the economy, and your appointees. 50 is typical.' + (gv.kind === 'legislator' ? ' Voters hold legislators only partly responsible.' : '') + '</p><div class="grid g4">' +
       Object.entries(gv.outcomes).map(([k, v]) => '<div class="kpi"><b class="' + ((k === 'crime' ? 50 - v : v - 50) >= 0 ? 'good' : 'bad') + '">' + Math.round(v) + '</b><span>' + esc(PG.approval.OUTCOME_NAMES[k] || k) + (k === 'crime' ? ' (lower is better)' : '') + '</span></div>').join('') + '</div></div>';
     // Personal actions
+    h += personalityCard(g);
     h += '<div class="card"><h3>Your time this month</h3><p class="small muted">' + gv.actionsLeft + ' personal actions left. Meetings with groups and leadership bids use political capital instead.</p><div class="row">' +
       ui.btn('Hold a town hall', { type: 'gov.action', kind: 'townhall' }, '', { disabled: gv.actionsLeft <= 0 }) +
       ui.btn('Constituent services', { type: 'gov.action', kind: 'district' }, '', { disabled: gv.actionsLeft <= 0 }) +
@@ -38,6 +41,35 @@
       '</div><p class="small muted">War chest for your next race: ' + U.fmtMoney(p.cash) + '</p></div>';
     return h;
   };
+
+  // A short, contextual to-do list so the player always knows what matters this month.
+  function briefing(g) {
+    const gv = g.gov, p = g.player;
+    const tips = [];
+    const votes = gv.docket.filter((d) => { const b = gv.bills.find((x) => x.id === d.billId); return b && PG.leg.isPlayerChamber(g, d.chamber) && b.playerVote === null; }).length;
+    if (gv.decision === 'pending') tips.push(['🗳️', 'Your seat is up soon — decide below whether to run again.']);
+    if (votes) tips.push(['📜', votes + ' floor vote(s) need your decision on the Legislature tab.']);
+    const holds = gv.bills.reduce((n, b) => n + (b.holdouts || []).filter((x) => !x.resolved).length, 0);
+    if (holds) tips.push(['🤝', holds + ' holdout(s) are waiting on your answer before a close vote.']);
+    if (gv.desk && gv.desk.length) tips.push(['🖋️', gv.desk.length + ' bill(s) on your desk to sign or veto.']);
+    if (gv.budgetStage === 'drafting') tips.push(['🧾', 'Budget season: draft and submit your proposal.']);
+    if (gv.budgetStage === 'counter') tips.push(['🧾', 'The legislature sent back its own budget — accept, line-item, or veto.']);
+    if (gv.kind === 'executive' && Object.values(gv.cabinet).some((x) => !x)) tips.push(['👔', 'Cabinet posts are vacant — nominees need confirmation.']);
+    if (g.courts && g.courts.cases.some((c) => c.status === 'pending' && c.injunction)) tips.push(['⚖️', 'A court has blocked one of your policies — see Courts.']);
+    if (!PG.leg.activeBills(g).some((b) => b.playerStance > 0) && p.capital >= 4) tips.push(['💡', 'You have ' + Math.round(p.capital) + ' capital and nothing moving. Introduce or back a bill.']);
+    if (gv.approval.base < 45 && PG.data.officeById[gv.officeId].partisan) tips.push(['⚠️', 'Your base is restless (' + Math.round(gv.approval.base) + '%). A primary challenge is brewing.']);
+    if (!tips.length) tips.push(['✅', 'Nothing urgent. Use your personal actions, build relationships, or bank capital for a big push.']);
+    return '<div class="card brief"><h3>This month</h3><ul class="icons">' + tips.slice(0, 5).map(([i, t]) => '<li><span aria-hidden="true">' + i + '</span>' + esc(t) + '</li>').join('') + '</ul></div>';
+  }
+  ui.govBriefing = briefing;
+
+  function personalityCard(g) {
+    const jm = PG.character.jobMods(g);
+    if (!jm.lines.length) return '';
+    return '<div class="card"><h3>🧠 Your personality at work</h3><p class="small muted">Your traits, background and skills change how the job plays out.</p><ul class="traits">' +
+      jm.lines.map((l) => '<li><b>' + esc(l.source) + ':</b> ' + esc(l.text) + '</li>').join('') + '</ul></div>';
+  }
+  ui.personalityCard = personalityCard;
 
   // ------------------------------------------------------------- legislature
   function stageLabel(b, g) {
@@ -55,13 +87,14 @@
       h += '<div class="card alert"><h3>On your desk</h3>' + gv.desk.map((id) => { const b = gv.bills.find((x) => x.id === id); return billRow(g, b, ui.btn('Sign', { type: 'gov.sign', billId: id }, 'primary small') + ui.btn('Veto', { type: 'gov.veto', billId: id }, 'danger small')); }).join('') + '<p class="small muted">Bills you neither sign nor veto become law after about a month.</p></div>';
     }
     // Docket
+    h += holdoutsCard(g);
     const mine = gv.docket.filter((d) => PG.leg.isPlayerChamber(g, d.chamber));
     if (mine.length) {
       h += '<div class="card alert"><h3>Floor votes this month</h3>' + mine.map((d) => {
         const b = gv.bills.find((x) => x.id === d.billId);
         if (!b) return '';
         const pos = PG.leg.partyPosition(g, gv.level, p.party, b);
-        return billRow(g, b, '<span class="small muted">Your party: ' + (pos > 0 ? 'YES' : pos < 0 ? 'NO' : 'free vote') + '</span> ' +
+        return billRow(g, b, (b.calledFavor ? '<span class="small warn">' + esc(b.calledFavor) + ' is calling in your favor</span> ' : '') + '<span class="small muted">Your party: ' + (pos > 0 ? 'YES' : pos < 0 ? 'NO' : 'free vote') + '</span> ' +
           ui.btn('Yea' + (b.playerVote === 'Y' ? ' ✓' : ''), { type: 'gov.vote', billId: b.id, v: 'Y' }, 'small' + (b.playerVote === 'Y' ? ' primary' : '')) +
           ui.btn('Nay' + (b.playerVote === 'N' ? ' ✓' : ''), { type: 'gov.vote', billId: b.id, v: 'N' }, 'small' + (b.playerVote === 'N' ? ' primary' : '')));
       }).join('') + '<p class="small muted">Votes are held when you end the month. If you don\'t choose, you vote with your party.</p></div>';
@@ -86,6 +119,7 @@
       h += '<div class="card"><h3>Your committees</h3><table>' + ch.committees.filter((c) => me.committees.includes(c.id)).map((c) => { const chair = ch.members.find((m) => m.id === c.chair); return '<tr><td>' + esc(c.name) + '</td><td>' + (c.chair === me.id ? '<b>You chair it</b>' : 'Chair: ' + esc(chair ? chair.name : '—') + (chair && ch.partisan ? ' ' + ui.party(chair.party) : '') + ' (' + (chair ? chair.seniority : 0) + ' yrs)') + '</td></tr>'; }).join('') + '</table>' +
         '<p class="small muted">Seniority: ' + me.seniority + ' years · Party standing: ' + Math.round(p.partyRel) + ' · Votes cast: ' + gv.voteRecord.length + ', broke with party ' + (gv.defections || 0) + ' times · Missed votes: ' + (gv.missedVotes || 0) + '</p></div>';
     }
+    h += favorsCard(g);
     return h;
   };
 
@@ -95,12 +129,60 @@
     return PG.calendar.inSession(lvl, st, g.date.month, g.date.year) ? 'In session' : 'Not in session (bills can\'t move)';
   }
 
+  // Where a bill is in the process, as a step indicator.
+  function stepper(g, b) {
+    const steps = [];
+    b.chambers.forEach((c, i) => {
+      const nm = g.world.chambers[c].name.replace(/^U\.S\. /, '').replace(/^.* (House|Senate|Council|Education|Legislature)$/, '$1');
+      steps.push({ key: 'c' + i, label: 'Committee' + (b.chambers.length > 1 ? ' · ' + nm : '') });
+      steps.push({ key: 'f' + i, label: 'Floor' + (b.chambers.length > 1 ? ' · ' + nm : '') });
+    });
+    const ex = PG.leg.execFor(g, b.level);
+    if (ex) steps.push({ key: 'd', label: 'Signature' });
+    steps.push({ key: 'law', label: 'Law' });
+    let cur;
+    if (b.stage === 'enacted') cur = steps.length - 1;
+    else if (b.stage === 'committee') cur = b.ci * 2;
+    else if (b.stage === 'floor') cur = b.ci * 2 + 1;
+    else if (b.stage === 'conference') cur = b.chambers.length * 2 - 1;
+    else if (b.stage === 'desk' || b.stage === 'override' || b.stage === 'vetoed') cur = steps.length - 2;
+    else cur = -1;
+    const dead = b.stage === 'dead' || b.stage === 'vetoed';
+    let deadAt = dead ? Math.max(0, Math.min(steps.length - 2, b.stage === 'vetoed' ? steps.length - 2 : (b.votes.length ? (b.ci * 2 + (b.votes[b.votes.length - 1].kind === 'committee' ? 0 : 1)) : b.ci * 2))) : -1;
+    return '<ol class="stepper">' + steps.map((s, i) => {
+      const cls = dead && i === deadAt ? 'fail' : (i < cur || (b.stage === 'enacted')) ? 'done' : i === cur ? 'now' : '';
+      return '<li class="' + cls + '">' + esc(s.label) + '</li>';
+    }).join('') + '</ol>';
+  }
+  ui.billStepper = stepper;
+
   function billRow(g, b, actions) {
     if (!b) return '';
     const lw = PG.data.lawById[b.lawId];
     const last = b.history[b.history.length - 1];
-    return '<div class="row between" style="border-bottom:1px solid var(--line);padding:8px 0"><div style="flex:1;min-width:220px"><b>' + esc(lw.name) + '</b> <span class="chip">' + PG.data.scopes[b.scope - 1].name + '</span> ' +
-      (b.playerStance > 0 ? '<span class="chip good">you support</span>' : b.playerStance < 0 ? '<span class="chip bad">you oppose</span>' : '') + '<div class="small muted">' + esc(stageLabel(b, g)) + ' · sponsor ' + esc(b.sponsorName) + (last ? ' · ' + esc(last.text) : '') + '</div></div><div class="row">' + actions + '</div></div>';
+    const tags = (b.pill && !b.pill.stripped ? '<span class="chip bad" title="' + esc(b.pill.name) + '">amended: ' + esc(b.pill.kind) + '</span> ' : '') + (b.calledFavor ? '<span class="chip warn">favor called in</span> ' : '') + (b.holdouts && b.holdouts.some((h) => !h.resolved) ? '<span class="chip warn">holdouts</span> ' : '');
+    return '<div class="billrow"><div class="row between"><div style="flex:1;min-width:220px"><b>' + esc(lw.name) + '</b> <span class="chip">' + PG.data.scopes[b.scope - 1].name + '</span> ' +
+      (b.playerStance > 0 ? '<span class="chip good">you support</span> ' : b.playerStance < 0 ? '<span class="chip bad">you oppose</span> ' : '') + tags + '<div class="small muted">Sponsor ' + esc(b.sponsorName) + (last ? ' · ' + esc(last.text) : '') + '</div></div><div class="row">' + actions + '</div></div>' + stepper(g, b) + '</div>';
+  }
+
+  function holdoutsCard(g) {
+    const gv = g.gov;
+    const list = [];
+    for (const b of gv.bills) for (const h of (b.holdouts || [])) if (!h.resolved) list.push({ b, h });
+    if (!list.length) return '';
+    const jm = PG.character.jobMods(g);
+    const cost = Math.max(1, 2 + jm.dealCost);
+    return '<div class="card alert"><h3>🤝 Holdouts want something</h3><p class="small muted">Your bill is close. These members will vote yes — for a price. Refusing makes them firm no votes.</p>' +
+      list.map(({ b, h }) => '<div class="row between billrow"><span><b>' + esc(h.name) + '</b> ' + (h.party === 'D' || h.party === 'R' ? ui.party(h.party) : '') + ' on <i>' + esc(b.title) + '</i>: ' + esc(h.text) +
+        (h.demand === 'project' ? ' <span class="muted small">(' + cost + ' capital + a district project)</span>' : h.demand === 'scope' ? ' <span class="muted small">(bill drops to ' + (b.scope > 1 ? PG.data.scopes[b.scope - 2].name : 'Modest') + ')</span>' : ' <span class="muted small">(they will call it in later — reneging costs you)</span>') + '</span><span class="row">' +
+        ui.btn('Accept', { type: 'gov.holdout', billId: b.id, memberId: h.memberId, accept: true }, 'small primary') + ui.btn('Refuse', { type: 'gov.holdout', billId: b.id, memberId: h.memberId, accept: false }, 'small') + '</span></div>').join('') + '</div>';
+  }
+
+  function favorsCard(g) {
+    const ious = (g.gov.ious || []);
+    if (!ious.length) return '';
+    return '<div class="card"><h3>📒 Favors ledger</h3><p class="small muted">Promises made to win votes. When a colleague calls one in, voting no breaks your word — and the whole chamber remembers.</p><table>' +
+      ious.slice().reverse().map((x) => '<tr><td>' + esc(x.name) + '</td><td class="small muted">' + U.fmtShortDate(x.date) + '</td><td><span class="chip ' + (x.status === 'repaid' ? 'good' : x.status === 'broken' ? 'bad' : 'warn') + '">' + x.status + '</span></td></tr>').join('') + '</table></div>';
   }
 
   function lawCard(g, lw, scope) {
@@ -129,6 +211,7 @@
     const chId = b.chambers[Math.min(b.ci, b.chambers.length - 1)];
     const ch = g.world.chambers[chId];
     let h = '<div class="row between"><h2>' + esc(lw.name) + ' <span class="chip">' + PG.data.scopes[b.scope - 1].name + '</span></h2><button data-cmd="closeModal">✕</button></div><p class="muted">' + esc(stageLabel(b, g)) + ' · sponsor ' + esc(b.sponsorName) + ' · ' + U.plural(b.cosponsors.length, 'cosponsor') + '</p>';
+    h += stepper(g, b);
     h += lawCard(g, lw, b.scope);
     if (live) {
       const kind = ch.rules.cloture && !b.reconciliation ? 'cloture' : b.stage === 'override' ? 'override' : 'passage';
@@ -141,7 +224,10 @@
         ui.btn('Seek cosponsors (2)', { type: 'gov.cosponsors', billId: b.id }, 'small') + ui.btn('Press leadership to move it (3)', { type: 'gov.push', billId: b.id }, 'small') + ui.btn('Go public (4)', { type: 'gov.public', billId: b.id }, 'small') +
         (gv.level === 'federal' && lw.budgetary && !b.reconciliation ? ui.btn('Use reconciliation (6)', { type: 'gov.reconcile', billId: b.id }, 'small', { title: 'Simple-majority Senate path for budgetary bills, once per fiscal year' }) : '') + (b.reconciliation ? '<span class="chip good">reconciliation</span>' : '') +
         (chId === 'us_house' && b.stage === 'floor' ? ui.btn('Discharge petition', { type: 'gov.discharge', billId: b.id }, 'small') : '') +
-        (b.stage === 'committee' && isChair(g, b) ? ui.btn('Bury it in committee', { type: 'gov.bury', billId: b.id }, 'small danger') : '') + '</div>' +
+        (b.stage === 'committee' && isChair(g, b) ? ui.btn('Bury it in committee', { type: 'gov.bury', billId: b.id }, 'small danger') : '') +
+        (b.stage === 'committee' && b.playerStance > 0 && !b.hearing ? ui.btn('Hold a hearing (1 action)', { type: 'gov.hearing', billId: b.id }, 'small', { title: 'Policy skill decides how it goes; a good hearing makes markup likelier' }) : '') +
+        (b.pill && !b.pill.stripped ? ui.btn('Strip amendment (3)', { type: 'gov.strip', billId: b.id }, 'small') : '') + '</div>' +
+        (b.pill ? '<p class="small ' + (b.pill.stripped ? 'good' : 'warn') + '">Amendment' + (b.pill.stripped ? ' (stripped)' : '') + ': ' + esc(b.pill.name) + ' — added by ' + esc(b.pill.by) + '. ' + ({ offset: 'Fiscal hawks like it; the program delivers 30% less.', rider: 'It drags the bill\'s ideology away from its original backers.', sunset: 'The law would expire after two years.' }[b.pill.kind] || '') + '</p>' : '') +
         '<p class="small muted">Whipping (2 capital) and side deals (3 capital + a district project) work only in the direction of your stated position. Members\' leanings combine ideology, party leadership, district pressure, interest-group lobbying, cost concerns, their relationship with you, and personal conviction.</p>';
       const rows = w.rows.slice().sort((a, b2) => Math.abs(a.score) - Math.abs(b2.score)).slice(0, 40);
       h += '<div class="tablewrap"><table><thead><tr><th>Member</th><th>Lean</th><th>Main factor</th><th class="num">Score</th><th></th></tr></thead><tbody>' + rows.map((r) => '<tr class="' + (r.you ? 'you' : '') + '"><td>' + esc(r.name) + ' ' + (ch.partisan ? ui.party(r.party) : '') + (r.state && ch.level === 'federal' ? ' <span class="small muted">' + r.state + '-' + r.district + '</span>' : '') + '</td><td>' + leanLabel(r.lean) + '</td><td class="small">' + esc(r.reason || '') + '</td><td class="num">' + (r.you ? '' : r.score.toFixed(2)) + '</td><td class="nowrap">' + (r.you || !b.playerStance ? '' : ui.btn('Whip', { type: 'gov.whip', billId: b.id, memberId: r.id }, 'small') + ui.btn('Deal', { type: 'gov.deal', billId: b.id, memberId: r.id }, 'small')) + '</td></tr>').join('') + '</tbody></table></div><p class="small muted">Showing the 40 most persuadable members (closest to undecided).</p></div>';

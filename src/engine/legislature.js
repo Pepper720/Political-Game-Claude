@@ -8,7 +8,20 @@
 
   function law(bill) { return PG.data.lawById[bill.lawId]; }
   function scopeMult(bill) { return PG.data.scopes[bill.scope - 1].mult; }
-  function L(bill) { const l = law(bill), m = scopeMult(bill); return { econ: l.ideo.econ * m, social: l.ideo.social * m }; }
+  function L(bill) {
+    const l = law(bill), m = scopeMult(bill);
+    const pill = bill.pill && !bill.pill.stripped ? bill.pill : null;
+    return { econ: l.ideo.econ * m + (pill ? pill.econ : 0), social: l.ideo.social * m + (pill ? pill.social : 0) };
+  }
+
+  // Personality modifiers, cached per state object and month (memberScore is hot).
+  let jmCache = { st: null, key: null, mods: null };
+  function jm(state) {
+    const key = U.monthIndex(state.date) + '|' + state.player.traits.join(',') + '|' + state.player.fatigue;
+    if (jmCache.st !== state || jmCache.key !== key) jmCache = { st: state, key, mods: PG.character.jobMods(state) };
+    return jmCache.mods;
+  }
+  function legDifficulty(state) { return ({ forgiving: 0.8, normal: 1, hard: 1.25 })[state.difficulty] || 1; }
   function chamber(state, id) { return state.world.chambers[id]; }
   function member(state, chamberId, mid) { return chamber(state, chamberId).members.find((m) => m.id === mid); }
   function polarization(level) { return level === 'federal' ? 1 : level === 'state' ? 0.8 : 0.3; }
@@ -72,11 +85,17 @@
     if (ps && !m.isPlayer) {
       const relv = (m.rel || 0) / 100 * 0.8;
       const whip = (bill.whip && bill.whip[m.id]) || 0;
-      const deal = bill.deals && bill.deals[m.id] ? 1.1 : 0;
-      const pub = bill.publicPush ? U.clamp((opts.approval || 50) - 45, -15, 20) / 20 * 0.3 : 0;
-      const v = ps * (relv + whip * 0.4 + deal + pub);
+      const mods = jm(state);
+      const persuade = 1 + mods.persuade;
+      const deal = bill.deals && bill.deals[m.id] ? 1.1 * (1 + mods.deal) : 0;
+      const pub = bill.publicPush ? U.clamp((opts.approval || 50) - 45, -15, 20) / 20 * 0.3 * persuade : 0;
+      let v = ps * (relv + whip * 0.4 * persuade + deal + pub);
+      // Firebrands struggle across the aisle; expertise helps on home-turf issues.
+      if (ch.partisan && mods.colleagues < 0 && m.party !== state.player.party) v += ps * mods.colleagues * 0.5;
+      if (mods.cats.includes(lw.cat)) v += ps * 0.15;
       if (Math.abs(v) > 0.02) parts.player = v;
     }
+    if (bill.snubs && bill.snubs[m.id]) parts.player = (parts.player || 0) - 0.5 * Math.max(1, Math.abs(ps));
     const ex = execFor(state, level);
     if (ex && bill.execStance && !ex.isPlayer && ch.partisan && ex.party === m.party) parts.executive = bill.execStance * 0.25;
     if (ex && ex.isPlayer && bill.execStance && ch.partisan && ex.party === m.party) parts.executive = bill.execStance * 0.3;
@@ -85,13 +104,16 @@
       // Sustaining a veto: the executive's party rallies.
       if (ex && ch.partisan && ex.party === m.party) parts.executive = (parts.executive || 0) - 0.9 * m.loyalty;
     }
+    // Inertia: changing the law needs a reason; doing nothing is the default.
+    parts.statusQuo = -0.24 * legDifficulty(state);
+    if (bill.pill && !bill.pill.stripped && bill.pill.kind === 'offset') parts.fiscal = (parts.fiscal || 0) + Math.max(0, m.econ) / 100 * 0.4;
     parts.personal = PG.rng.hashNormal(bill.id + '|' + m.id) * 0.3 - 0.08;
     let score = 0;
     for (const [k, v] of Object.entries(parts)) if (k[0] !== '_') score += v;
     return { score, parts };
   }
 
-  const PART_LABEL = { ideology: 'ideology', party: 'party leadership', district: 'district pressure', fiscal: 'cost concerns',
+  const PART_LABEL = { statusQuo: 'status-quo inertia', ideology: 'ideology', party: 'party leadership', district: 'district pressure', fiscal: 'cost concerns',
     groups: 'interest-group lobbying', player: 'your persuasion', executive: 'the executive', cosponsor: 'cosponsorship', personal: 'personal conviction' };
 
   function topReason(parts, direction) {
@@ -272,7 +294,8 @@
     const norm = sponsorParty ? PG.voters.partyNorm(sponsorParty) : { econ: U.sum(ch.members, (m) => m.econ) / ch.members.length, social: U.sum(ch.members, (m) => m.social) / ch.members.length };
     const lw = R.weighted(state, pool, (l) => Math.max(0.05, (norm.econ * l.ideo.econ + norm.social * l.ideo.social) / 1500 + 0.45));
     if (!lw) return;
-    const cands = ch.members.filter((m) => !m.isPlayer && (!sponsorParty || m.party === sponsorParty));
+    const owed = (g.ious || []).filter((x) => x.status === 'owed').map((x) => ch.members.find((m) => m.id === x.memberId)).filter(Boolean);
+    const cands = owed.length && R.chance(state, 0.5) ? owed : ch.members.filter((m) => !m.isPlayer && (!sponsorParty || m.party === sponsorParty));
     const sponsor = R.weighted(state, cands, (m) => Math.max(0.05, (m.econ * lw.ideo.econ + m.social * lw.ideo.social) / 1500 + 0.5 + m.seniority / 20));
     if (!sponsor) return;
     const scope = R.pick(state, [1, 2, 2, 3]);
@@ -330,6 +353,9 @@
       if (scheduleDecision(state, bill, chId)) {
         g.docket.push({ billId: bill.id, chamber: chId });
         if (isPlayerChamber(state, chId)) bill.playerVote = bill.sponsorId === 'player' ? 'Y' : null;
+        if (isPlayerChamber(state, chId) || (g.kind === 'executive' && (bill.sponsorId === 'exec' || bill.playerStance > 0))) makeHoldouts(state, bill, chId);
+        const iou = (g.ious || []).find((x) => x.status === 'owed' && x.memberId === bill.sponsorId);
+        if (iou && isPlayerChamber(state, chId)) { bill.calledFavor = iou.name; PG.game.log(state, 'legislation', iou.name + ' is calling in the favor you owe: they expect your YES on "' + bill.title + '".'); }
       } else if (bill.monthsInStage > 5) {
         bill.stage = 'dead'; hist(state, bill, 'Leadership never brought it to the floor.');
       }
@@ -349,8 +375,11 @@
     if (chair && chair.isPlayer) markup = bill.playerStance >= 0 && !bill.buried;
     else {
       const cs = chair ? memberScore(state, ch, chair, bill).score : 0;
-      const push = (bill.markupPush || 0) * 0.6 + (bill.cosponsors.length / Math.max(5, ch.members.length)) * 2 + (bill.ci > 0 ? 0.8 : 0);
-      markup = R.chance(state, U.logistic(cs * 1.8 + push - 0.4));
+      const mine = bill.sponsorId === 'player' || bill.sponsorId === 'exec';
+      const push = (bill.markupPush || 0) * 0.6 + (bill.cosponsors.length / Math.max(5, ch.members.length)) * 2 + (bill.ci > 0 ? 0.8 : 0) + (mine ? jm(state).markup : 0) + (bill.hearing ? 0.6 : 0);
+      markup = R.chance(state, U.logistic(cs * 1.8 + push - 0.8 * legDifficulty(state)));
+      // A hostile chair may mark it up only after loading it with an unfriendly amendment.
+      if (markup && chair && !bill.pill && cs < 0.3) maybePill(state, bill, chair);
     }
     if (!markup) {
       if (bill.monthsInStage >= 4) { bill.stage = 'dead'; hist(state, bill, 'Never received a hearing — the chair, ' + (chair ? chair.name : 'committee leadership') + ', let it die.'); }
@@ -372,7 +401,94 @@
     const maj = ch.members.filter((m) => m.party === ch.majority && !m.isPlayer);
     const support = maj.filter((m) => memberScore(state, ch, m, bill).score > 0).length;
     const ok = support > maj.length / 2;
-    return ok || R.chance(state, (bill.floorPush || 0) * 0.25);
+    const mine = bill.sponsorId === 'player' || bill.sponsorId === 'exec';
+    const tilt = mine ? jm(state).schedule : 0;
+    return (ok && (tilt >= 0 || R.chance(state, 1 + tilt))) || R.chance(state, (bill.floorPush || 0) * 0.25 + Math.max(0, tilt) * 0.5);
+  }
+
+  // ------------------------------------------------- amendments & holdouts
+  const PILLS = [
+    { kind: 'offset', name: 'Pay-for amendment: requires matching spending cuts', econ: 18, social: 0 },
+    { kind: 'rider', name: 'Unrelated culture-war rider', econ: 0, social: 22 },
+    { kind: 'rider', name: 'Rider expanding union carve-outs', econ: -20, social: 0 },
+    { kind: 'sunset', name: 'Sunset clause: expires in two years', econ: 0, social: 0 },
+    { kind: 'rider', name: 'Rider adding new regulations', econ: -15, social: -8 },
+  ];
+
+  function maybePill(state, bill, chair) {
+    if (!R.chance(state, 0.4 * legDifficulty(state))) return;
+    const dir = Math.sign(chair.econ + chair.social) || 1;
+    const fits = PILLS.filter((p) => p.kind === 'sunset' || Math.sign(p.econ + p.social) === dir);
+    const p = R.pick(state, fits);
+    bill.pill = { kind: p.kind, name: p.name, econ: p.econ, social: p.social, by: chair.name, stripped: false };
+    hist(state, bill, 'Committee chair ' + chair.name + ' attached an amendment: ' + p.name + '.', ['Amendments can sap support from the bill\'s original backers. You can try to strip it on the floor.']);
+    if (bill.playerStance) PG.game.log(state, 'legislation', '"' + bill.title + '" picked up a hostile amendment in committee: ' + p.name + '.');
+  }
+
+  function stripPill(state, billId) {
+    const g = state.gov, p = state.player;
+    const bill = g.bills.find((b) => b.id === billId);
+    if (!bill || !bill.pill || bill.pill.stripped) return { ok: false, msg: 'No amendment to strip.' };
+    if (p.capital < 3) return { ok: false, msg: 'An amendment fight costs 3 political capital.' };
+    p.capital -= 3;
+    const ch = chamber(state, bill.chambers[Math.min(bill.ci, bill.chambers.length - 1)]);
+    const allies = ch.partisan ? (ch.majority === p.party ? 0.25 : -0.15) : 0;
+    const prob = U.clamp(0.4 + allies + jm(state).persuade * 0.4, 0.1, 0.85);
+    if (R.chance(state, prob)) {
+      bill.pill.stripped = true;
+      hist(state, bill, 'You won a floor vote to strip the amendment (' + bill.pill.name + ').');
+      return { ok: true, msg: 'Amendment stripped.' };
+    }
+    hist(state, bill, 'Your motion to strip the amendment failed.');
+    return { ok: true, msg: 'The motion to strip failed (' + Math.round(prob * 100) + '% chance). The amendment stays.' };
+  }
+
+  // A docketed bill you back, close to the line, draws holdouts with demands.
+  function makeHoldouts(state, bill, chId) {
+    if (!bill.playerStance || bill.playerStance < 0 || bill.holdouts) return;
+    const w = whipCount(state, chId, bill);
+    const gap = w.yes - w.needed;
+    if (gap < -5 || gap > 2) return;
+    const pool = w.rows.filter((r) => !r.you && r.score > -0.7 && r.score < 0.25).sort((a, b) => Math.abs(a.score) - Math.abs(b.score)).slice(0, 3);
+    if (!pool.length) return;
+    const lw = law(bill);
+    bill.holdouts = pool.map((r) => {
+      const m = findMember(state, r.id);
+      const demand = m.econ > 25 && (lw.cost || 0) > 0 && bill.scope > 1 ? 'scope' : Math.abs(m.lean) < 12 ? 'project' : m.seniority > 8 ? 'favor' : 'project';
+      const text = { scope: 'wants the bill scaled back to cut its cost', project: 'wants a project for their district', favor: 'wants your vote on their own bill later' }[demand];
+      return { memberId: r.id, name: r.name, party: r.party, demand, text, resolved: null };
+    });
+    PG.game.log(state, 'legislation', '"' + bill.title + '" is ' + (gap >= 0 ? 'barely ahead' : U.plural(-gap, 'vote') + ' short') + ' — ' + U.plural(bill.holdouts.length, 'holdout') + ' want something.', bill.holdouts.map((h) => h.name + ' ' + h.text));
+  }
+
+  function resolveHoldout(state, billId, memberId, accept) {
+    const g = state.gov, p = state.player;
+    const bill = g.bills.find((b) => b.id === billId);
+    const h = bill && (bill.holdouts || []).find((x) => x.memberId === memberId);
+    if (!h || h.resolved) return { ok: false, msg: 'Nothing to resolve.' };
+    const m = findMember(state, memberId);
+    if (!accept) {
+      h.resolved = 'refused';
+      bill.snubs = bill.snubs || {}; bill.snubs[memberId] = true;
+      if (m) m.rel = U.clamp((m.rel || 0) - 6, -100, 100);
+      return { ok: true, msg: 'You refused. ' + h.name + ' is now firmly against it.' };
+    }
+    if (h.demand === 'project') {
+      const cost = Math.max(1, 2 + jm(state).dealCost);
+      if (p.capital < cost) return { ok: false, msg: 'A district project costs ' + cost + ' political capital.' };
+      p.capital -= cost;
+      if (g.budget) PG.budget.oneTime(state, -0.001);
+      PG.groups.change(state, 'taxpayers', -1, 'District project for a holdout');
+    } else if (h.demand === 'scope') {
+      if (bill.scope > 1) { bill.scope--; hist(state, bill, 'Scaled back to "' + PG.data.scopes[bill.scope - 1].name + '" to win over ' + h.name + '.'); }
+    } else if (h.demand === 'favor') {
+      g.ious = g.ious || [];
+      g.ious.push({ memberId, name: h.name, date: { ...state.date }, status: 'owed' });
+    }
+    h.resolved = 'accepted';
+    bill.deals[memberId] = true;
+    if (m) m.rel = U.clamp((m.rel || 0) + 5, -100, 100);
+    return { ok: true, msg: h.name + ' is on board.' + (h.demand === 'favor' ? ' You now owe them a vote.' : '') };
   }
 
   function fiscalYear(state) {
@@ -505,9 +621,22 @@
       const lines = PG.groups.reactToLaw(state, lw, bill.scope, yes ? w * 0.8 : -w * 0.8, yes ? 'You voted for' : 'You voted against');
       // Party discipline.
       const pos = partyPosition(state, bill.level, state.player.party, bill);
+      const iou = bill.calledFavor ? (state.gov.ious || []).find((x) => x.status === 'owed' && x.name === bill.calledFavor) : null;
+      if (iou) {
+        iou.status = yes ? 'repaid' : 'broken';
+        const sp = findMember(state, iou.memberId);
+        if (yes) lines.push('You repaid your debt to ' + iou.name + '.');
+        else {
+          if (sp) sp.rel = U.clamp((sp.rel || 0) - 30, -100, 100);
+          const ch = chamber(state, state.gov.body);
+          if (ch) ch.members.forEach((x) => { x.rel = U.clamp((x.rel || 0) - 3, -100, 100); });
+          lines.push('You reneged on a promise to ' + iou.name + ' — the whole chamber noticed (relationships −3).');
+        }
+      }
       if (pos && (pos > 0) !== yes) {
-        state.player.partyRel = U.clamp(state.player.partyRel - 4, 0, 100);
-        lines.push('Party leadership noticed you broke ranks (−4)');
+        const pen = Math.round(4 * Math.max(0.2, 1 + jm(state).defection));
+        state.player.partyRel = U.clamp(state.player.partyRel - pen, 0, 100);
+        lines.push('Party leadership noticed you broke ranks (−' + pen + ')');
         state.gov.defections = (state.gov.defections || 0) + 1;
       } else if (pos) state.player.partyRel = U.clamp(state.player.partyRel + 0.5, 0, 100);
       state.gov.voteRecord.push({ date: { ...state.date }, bill: bill.title, vote: bill.playerVote, partyLine: pos ? (pos > 0) === yes : null });
@@ -521,14 +650,16 @@
     hist(state, bill, how);
     const g = state.gov;
     const causes = PG.budget.applyLaw(state, lw, bill.scope);
-    const mult = scopeMult(bill);
+    const mine = bill.sponsorId === 'player' || bill.sponsorId === 'exec' || (execFor(state, bill.level) || {}).isPlayer;
+    const mult = scopeMult(bill) * (mine ? 1 + jm(state).policyEff : 1) * (bill.pill && !bill.pill.stripped && bill.pill.kind === 'offset' ? 0.7 : 1);
     for (const [k, v] of Object.entries(lw.outcomes || {})) g.lawOutcomes[k] = (g.lawOutcomes[k] || 0) + v * mult;
     if (lw.econ) {
       const eff = {};
       for (const [k, v] of Object.entries(lw.econ)) eff[k] = v * mult * (g.level === 'federal' ? 1 : g.level === 'state' ? 0.6 : 0.3);
       PG.economy.shock(state, eff, g.level === 'federal');
     }
-    g.enacted.push({ lawId: lw.id, scope: bill.scope, date: { ...state.date }, billId: bill.id, sponsor: bill.sponsorName, active: true, byPlayer: bill.sponsorId === 'player' || bill.sponsorId === 'exec' });
+    g.enacted.push({ lawId: lw.id, scope: bill.scope, date: { ...state.date }, billId: bill.id, sponsor: bill.sponsorName, active: true, byPlayer: bill.sponsorId === 'player' || bill.sponsorId === 'exec',
+      sunset: bill.pill && !bill.pill.stripped && bill.pill.kind === 'sunset' ? U.addMonths(state.date, 24) : null });
     // Responsibility: executives own what they sign; sponsors own their bills.
     const ex = execFor(state, bill.level);
     if (ex && ex.isPlayer) {
@@ -569,8 +700,9 @@
   function deal(state, billId, memberId) {
     const p = state.player, bill = state.gov.bills.find((b) => b.id === billId);
     if (!bill) return { ok: false, msg: 'No such bill.' };
-    if (p.capital < 3) return { ok: false, msg: 'A side deal costs 3 political capital (plus a district project).' };
-    p.capital -= 3;
+    const cost = Math.max(1, 3 + jm(state).dealCost);
+    if (p.capital < cost) return { ok: false, msg: 'A side deal costs ' + cost + ' political capital (plus a district project).' };
+    p.capital -= cost;
     bill.deals[memberId] = true;
     const m = findMember(state, memberId);
     if (m) m.rel = U.clamp((m.rel || 0) + 8, -100, 100);
@@ -590,7 +722,7 @@
     for (const m of ch.members) {
       if (m.isPlayer || bill.cosponsors.includes(m.id)) continue;
       const s = memberScore(state, ch, m, bill).score;
-      if (s > 0.45 && R.chance(state, 0.5)) { bill.cosponsors.push(m.id); added.push(m); }
+      if (s > 0.45 - jm(state).colleagues * 0.3 && R.chance(state, 0.5)) { bill.cosponsors.push(m.id); added.push(m); }
       if (added.length >= 6) break;
     }
     const bip = ch.partisan ? added.filter((m) => m.party !== p.party).length : 0;
@@ -646,6 +778,19 @@
     return { ok: true, msg: 'Discharge petition reached 218 signatures; the bill goes to the floor over leadership\'s objections.' };
   }
 
+  function holdHearing(state, billId) {
+    const p = state.player, bill = state.gov.bills.find((b) => b.id === billId);
+    if (!bill || bill.stage !== 'committee') return { ok: false, msg: 'Hearings are held while a bill is in committee.' };
+    if (bill.hearing) return { ok: false, msg: 'A hearing is already scheduled.' };
+    if (state.gov.actionsLeft <= 0) return { ok: false, msg: 'No personal time left this month.' };
+    state.gov.actionsLeft--;
+    bill.hearing = true;
+    const good = R.chance(state, U.clamp(0.5 + (PG.character.stat(state, 'policy') - 50) / 100, 0.15, 0.9));
+    hist(state, bill, good ? 'Your witnesses made a strong case at the hearing.' : 'The hearing went poorly; opponents dominated the coverage.');
+    if (!good) bill.hearing = false;
+    return { ok: true, msg: good ? 'Strong hearing — the chair is more likely to hold a markup.' : 'The hearing fell flat (policy skill helps).' };
+  }
+
   function bury(state, billId) {
     const bill = state.gov.bills.find((b) => b.id === billId);
     if (!bill) return { ok: false, msg: 'No such bill.' };
@@ -682,6 +827,6 @@
 
   PG.leg = {
     law, chamber, member, memberScore, partyPosition, whipCount, vote, newBill, introduce, aiBills, monthly, activeBills, execFor,
-    requestReconciliation, fiscalYear, whip, deal, seekCosponsors, pushBill, goPublic, setStance, castVote, discharge, bury, sign, veto, findMember, enact, isPlayerChamber, threshold, L,
+    requestReconciliation, fiscalYear, makeHoldouts, maybePill, stripPill, resolveHoldout, holdHearing, jm, whip, deal, seekCosponsors, pushBill, goPublic, setStance, castVote, discharge, bury, sign, veto, findMember, enact, isPlayerChamber, threshold, L,
   };
 })(globalThis.PG = globalThis.PG || {});

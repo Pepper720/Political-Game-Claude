@@ -1,0 +1,265 @@
+# Ballot & Gavel
+
+A single-player simulation of an American political career that runs entirely in your
+browser. Start on a school board or city council, climb through the statehouse and
+Congress to the governor's mansion or the White House — and govern once you get there.
+Realism, systemic depth and transparent causality come first: every poll, vote, ruling
+and election tells you *why* it came out the way it did.
+
+All characters, interest groups and media outlets are fictional.
+
+## Running it
+
+No build step, no dependencies, no network calls.
+
+- **Just open `index.html`** in any modern browser (works over `file://`).
+- Or serve the folder: `npx serve .` / `python3 -m http.server`, or publish it on
+  GitHub Pages (Settings → Pages → deploy from the branch root).
+
+Progress autosaves to `localStorage` after every action. Use **Save & settings** to
+export a `.json` save file or import one.
+
+## How to play
+
+1. **Create a character** — name, party (Democratic, Republican, independent,
+   Libertarian or Green), background, home state and town type, age, a starting
+   ideology, and up to three traits (each has an upside and a cost). The setup screen
+   shows the **seed**: the same seed with the same choices replays the same game.
+2. **Pick a race** on the *Career* tab. Every office shows its real requirements, next
+   election, filing deadline, partisan lean and typical budget. Your first race must be
+   local.
+3. **Campaign month by month.** Split 20 campaign days among call time, small-dollar
+   digital, retail, media, ground organizing, policy work, debate prep and rest; set the
+   share of cash for ads (positive / contrast / negative), field and opposition
+   research; roll out policy positions; court endorsements. Big donors and PACs attach
+   **commitments** you'll be held to later. Polls come with real margins of error;
+   internal polls show crosstabs by voter bloc. The *Voters* tab shows exactly which
+   factors pull each bloc toward you or your rival.
+4. **Election night** reports results over time by region (or state), with mail-ballot
+   "mirages" in states that count mail last, and a breakdown of why you won or lost.
+5. **Govern.** Legislators introduce bills, gather cosponsors, whip votes member by
+   member, cut side deals, vote on the floor (party discipline vs. district), chase
+   committee chairs, and request earmarks. Executives propose budgets, sign or veto,
+   use line-item vetoes where the state allows, issue executive orders, nominate and
+   lose (or win) confirmation votes, and handle emergencies. Courts may strike down
+   what you pass. Approval is broken into visible components bloc by bloc.
+6. **Decide** near the end of each term: run again, aim higher, or retire. Term limits,
+   primary challenges from a restless base, midterm penalties and the economy all feed
+   into the next campaign.
+
+### Three ways to play
+
+- **Career (party)** — climb the ladder as a Democrat, Republican, Libertarian or Green.
+- **Career (independent)** — the same ladder without a party primary or party machine.
+- **Party founder** — you don't run yourself: you found and chair a new party. Name it,
+  pick a color and platform, then spend four actions a month fundraising, opening state
+  chapters, petitioning onto state ballots (signature requirements are higher in states
+  with notoriously hard ballot access), buying media, holding a convention and recruiting
+  and funding candidates for council, state legislature, U.S. House, Senate, governor and
+  President. Races use the same voter model as every other election, plus a
+  **wasted-vote penalty** that shrinks as the party gains name recognition, vote share
+  and seats. The party grows from *Fringe movement* to *Minor*, *Established* and
+  finally *Major party*; an election-night report shows every race you contested. Expect
+  a long climb — first seats usually take several cycles.
+
+### A living political world
+
+You are never alone in the room. Every game generates a **cast** of recurring,
+fictional people: chief of staff, communications director, an old-hand consultant, a
+pollster, a beat reporter, an investigative reporter, a mega-donor, the county party
+boss, a union president, the chamber of commerce head, a grassroots organizer, a
+community faith leader, your mentor — and a **rival** who climbs the ladder alongside
+you and will show up in your primary if you both want the same seat. Each has a quirk,
+a relationship with you, and a memory of what you did. Relationships do things: your
+press relations drift toward the beat reporter's view of you, hostile reporters make
+scandals bigger, a loyal chief banks capital, disloyal staff leak, a warm donor bundles
+checks, an angry organizer feeds a primary challenge.
+
+- **Storylines** (`data/arcs.js`) unfold over months or years: a plant closing that ends
+  as a power-hungry data center raising everyone's electric bill, a lead-pipe report you
+  could sit on, a stadium ultimatum, an investigative reporter pulling a thread, a storm
+  whose rebuild decision is tested by the *next* storm, a crypto donor, a viral clip, a
+  primary challenger, the boss's price for clearing your field, a pothole named Gary.
+  Choices set story variables and decide which chapter comes next; the People tab shows
+  every chapter you lived through.
+- **The phone**: small asks arrive between months (dinner with the donor, a picket line,
+  a pledge, a vigil). They never block the game, but they expire — and silence is also
+  an answer.
+- **The Wire**: social posts from fictional accounts, overheard gossip and cast quotes
+  reacting to what is actually happening — from every side.
+- **Weird but real**: gas prices drag on incumbents who don't control them; the home
+  team's rivalry game right before Election Day nudges incumbents; election-day rain
+  rewards the stronger field operation; shark bites hurt beach-town incumbents. Each is
+  logged with the research behind it (and its caveats) on the How it works page.
+
+### Governing is a fight
+
+Bills now pass through visible stages (introduced → committee → floor → other chamber →
+desk). Along the way:
+
+- **Hearings** build the record and can win over a wavering committee.
+- Hostile committee chairs may attach **poison pills** — pay-for offsets, unrelated
+  riders, sunset clauses. Strip them on the floor (costs capital, may fail) or live with
+  them (a sunset law expires; an offset cuts its effect).
+- Close votes produce **holdouts** with demands: scale the bill back, fund a district
+  project, or promise your vote on their bill later. Promises become **IOUs** — keep them
+  or that member (and the chamber) remembers.
+- Status-quo bias is stronger, so most bills die; snubbing colleagues costs you later.
+
+### Personality matters on the job
+
+Traits and background now change how you govern, not just how you campaign: charismatic
+officials persuade and give better addresses, workhorses get an extra action per month,
+dealmakers' side deals cost less, firebrands energize the base but alienate colleagues,
+lawyers defend laws in court better, teachers get more out of education policy, and so
+on. The *Office* tab lists every active modifier and where it comes from. Trait-specific
+events can also fire.
+
+### Difficulty
+
+Difficulty (*Forgiving / Normal / Hard*) changes how forgiving the simulation is —
+poll noise, opponent quality, scandal frequency, how hard bad news hits, starting money,
+election-day error, political capital and how stubborn legislatures are — never the
+rules. You can change it at any time from *Settings*; the change is logged in your
+history.
+
+The in-game **How it works** page lists the real-world rules modeled and every major
+simplification.
+
+## Project layout
+
+```
+index.html            Script manifest (also read by the Node test harness)
+css/style.css         Styles (light/dark, responsive)
+data/                 All game data — edit these to extend the game
+  states.js           50 states + DC: lean, demographics, primaries, terms, limits, vetoes…
+  people.js           Voter blocs, issues, backgrounds, traits, difficulty, name pools
+  offices.js          The career ladder and eligibility rules
+  government.js       Committees, budget structures, cabinets, executive orders
+  laws.js             Bill templates
+  groups.js           Interest groups and media outlets
+  events.js           The event pool
+  presidential.js     Primary calendar, delegate rules, Electoral College map tiles, VP archetypes
+  reality.js          "How this models reality" content
+src/engine/           Simulation (pure logic, no DOM)
+src/ui/               Rendering and input
+tests/                Zero-install test suite, bot, smoke and balance scripts
+DESIGN.md             Systems, data model and milestones
+```
+
+The engine never touches the DOM. All randomness flows through a seeded PRNG stored in
+the game state, so saves are fully reproducible. Files are classic scripts sharing a
+`PG` namespace (ES modules are blocked by browsers on `file://`).
+
+## Tests
+
+```
+node tests/run.js              # all unit + autoplay tests (no installs needed)
+node tests/run.js courts       # filter by test name
+node tests/smoke.js SEED 30 TX R   # bot plays a 30-year career and prints a report
+node tests/balance.js 30       # win rates, approval, reelection across many seeds
+node tests/browser-smoke.js    # optional: drives the real UI in headless Chromium (needs Playwright)
+```
+
+The suite covers the RNG, data integrity (538 electors, 435 seats, Senate classes,
+event references), electorate calibration, primaries/top-two/ranked-choice, the
+filibuster and reconciliation, veto-override thresholds, term limits, redistricting,
+delegate allocation, the Electoral College, governing as President and governor,
+courts, save/load round trips, determinism, and multi-seed 20-year autoplay careers.
+
+## Extending the game
+
+Everything below is plain data; no engine changes needed.
+
+### Add an event — `data/events.js`
+
+```js
+{ id: 'pothole_crisis', title: 'Pothole season',
+  text: 'Residents of {city} are posting photos of crater-sized potholes.',
+  when: { phase: ['governing'], kinds: ['executive'], levels: ['city'], minMonths: 3, weight: 1 },
+  choices: [
+    { label: 'Emergency repaving blitz', hint: 'Visible; expensive',
+      effects: { budgetPct: -0.004, outcomes: { infrastructure: 2 }, approval: { all: 1 } } },
+    { label: 'Stick to the schedule', hint: 'Cheap; drivers fume',
+      effects: { approval: { blocs: { sub_family: -1.5 } }, echo: { event: 'pothole_lawsuit', months: [3, 8], chance: 0.4 } } },
+  ] },
+```
+
+- `when`: `phase` (`governing` / `campaign` / `career`), `kinds`, `levels` (`school`,
+  `city`, `state`, `federal`), `offices`, `flags` / `notFlags`, `minMonths`, `weight`,
+  `once`, `partisan`. `echoOnly: true` events fire only when scheduled by an `echo`.
+- A choice has `effects`, or `chance: { p, stat, success, fail }` (a stat such as
+  `charisma` shifts the odds).
+- Text variables: `{city} {state} {name} {office} {opponent}` plus any passed in.
+- **Effect keys** (see `src/engine/effects.js`): `approval` (number or
+  `{ all, base, swing, opp, blocs: { id: n } }`), `record`, `groups: { id: n }`, `media`,
+  `capital`, `partyRel`, `legRel`, `cashPct`, `nameRec`, `fav`, `oppFav`, `momentum`,
+  `enthusiasm`, `ground`, `budgetPct`, `spendingPct: { cat, pct }`, `outcomes: { key: n }`,
+  `economy: { growth, unemployment, inflation }` (+ `national: true`), `presApproval`,
+  `flags: { set, clear }`, `scandal: { severity, text }`, `echo: { event, months: [a, b], chance }`,
+  plus specials `fireCabinet`, `redistrict`, `nuclear`. Party-founder events can use
+  `partyFunds`, `partyRec`, `partyFav`, `partyMembers` and `partyIdeo`.
+- Extra `when` conditions: `traits: [...]` (player has any of them) and `minStatus`
+  (party status, e.g. `'minor'`). `phase: ['party']` targets party-founder mode, and
+  `{party}` is the party's name in text.
+
+`node tests/run.js data` validates group, bloc, outcome and echo references.
+
+### Add a storyline — `data/arcs.js`
+
+A storyline is a set of chapters. Each chapter has a speaker (a cast role), text, and
+choices; a choice can apply effects, change relationships (`cast: { reporter: 6 }`),
+set story variables (`set: { deal: 'buyer' }`), and pick the next chapter — directly,
+after a delay (`{ stage, months: [3, 6] }`), or by a weighted roll shaped by your
+situation (`{ roll: [{ stage, w, mods: [{ if: 'presSameParty', w: 0.5 }] }] }`). Conditions
+use the names in `PG.arcs.PRED` (e.g. `governing`, `coastal`, `lowLoyalty`), `{ var }`,
+`{ cast }`, `{ flag }`, `{ any }` and `{ not }`. The header of `data/arcs.js` documents
+every field, and `tests/living.test.js` plays every storyline to an ending.
+Phone asks live in `data/cast.js`; Wire chatter in `data/wire.js`. Extra effect keys:
+`cast`, `mem`, `threat`, `gas`, `arc`, `replace`, `partySeat`, `ballotLoss`.
+
+### Add a law — `data/laws.js`
+
+```js
+{ id: 'library_hours', name: 'Extended Library Hours', levels: ['city'], cat: 'education',
+  issue: 'education', ideo: { econ: -10, social: 0 }, tags: ['public_schools'],
+  cost: 0.004, outcomes: { quality: 1.5 }, blocs: { young: 1 },
+  desc: 'Open branches evenings and Sundays. Popular with students; costs staff time.' }
+```
+
+`ideo` is the direction the policy moves (−100 left … +100 right on each axis) and
+drives every legislator's vote and every voter bloc's reaction; `tags` connect it to
+interest groups (`data/groups.js`); `cost`/`revenue` are fractions of the
+jurisdiction's budget; `outcomes` shift service indices; `legal: { vuln, grounds }`
+sets court risk; `budgetary: true` makes it eligible for Senate reconciliation;
+`preempt: 'state'` lets red/blue states challenge city versions. Add a committee
+category in `data/government.js` if you introduce a new `cat`.
+
+### Add or change an office — `data/offices.js`
+
+Each office declares its level, kind (`legislator` / `executive`), body, term (number
+or a state field like `'houseTerm'`), minimum age, election-year rule
+(`odd`, `even`, `state`, `gov`, `senate`, `pres`), campaign length, typical budget,
+ladder rank and term-limit rule. Jurisdiction wiring (which electorate, budget and
+legislature an office uses) lives in `src/engine/juris.js` (`OFFICE_KEY`,
+`OFFICE_LEVEL`, `OFFICE_BODY`); a brand-new office type needs an entry there, and
+`calendar.js` if it uses a new election-year rule.
+
+### Other data
+
+- **States** (`data/states.js`): one row per state — tweak leans, primary rules, term
+  limits, override thresholds, contribution limits.
+- **Interest groups** (`data/groups.js`): ideology, money/ground strength, levels, the
+  policy `tags` they care about, and the voter blocs they reach.
+- **Executive orders, cabinets, committees, budgets** (`data/government.js`).
+- **Presidential calendar and delegate rules** (`data/presidential.js`).
+
+## Design principles
+
+- **Even-handed.** No party or ideology is favored; every policy has costs; there is
+  no hidden moral score. Interest groups and media are balanced across the spectrum
+  (enforced by a test).
+- **Systemic.** Coalitions, money, the economy, courts and the calendar interact.
+  Compromise, hardball and inaction are all viable — and all cost something.
+- **Transparent.** Votes list defectors and the lobbying behind them, approval is
+  decomposed by component and bloc, elections explain which blocs moved and why.

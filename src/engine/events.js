@@ -12,7 +12,7 @@
       name: p.name, city: state.world.home.city.name, state: PG.juris.homeState(state).name,
       office: p.office ? PG.data.officeById[p.office.officeId].short : 'candidate', opponent: opp ? opp.name : 'your opponent',
       party: state.party ? state.party.name : (PG.data.parties[p.party] || PG.data.parties.I).name,
-    }, extra || {});
+    }, PG.cast ? PG.cast.vars(state) : {}, extra || {});
   }
 
   function phaseOf(state) { return state.mode === 'party' ? 'party' : state.campaign ? 'campaign' : state.gov ? 'governing' : 'career'; }
@@ -89,6 +89,7 @@
   function view(state) {
     const a = state.events.active;
     if (!a) return null;
+    if (a.arc) return PG.arcs.view(state, a.arc) || { title: 'The story moved on', text: '', choices: [{ i: 0, label: 'Continue', hint: '', ok: true }], stale: true };
     const ev = PG.data.eventById[a.id];
     return {
       id: ev.id, title: U.fill(ev.title, a.vars), text: U.fill(ev.text, a.vars),
@@ -105,6 +106,7 @@
   function choose(state, idx) {
     const a = state.events.active;
     if (!a) return { ok: false, msg: 'No event.' };
+    if (a.arc) return PG.arcs.choose(state, a.arc, idx);
     const ev = PG.data.eventById[a.id];
     const c = ev.choices[idx];
     if (!c || !requiresOk(state, c)) return { ok: false, msg: 'Not available.' };
@@ -155,5 +157,5 @@
     return lines;
   }
 
-  PG.events = { roll, trigger, scheduleEcho, processEchoes, view, choose, eligible };
+  PG.events = { roll, trigger, scheduleEcho, processEchoes, view, choose, eligible, phaseOf, ctxVars };
 })(globalThis.PG = globalThis.PG || {});

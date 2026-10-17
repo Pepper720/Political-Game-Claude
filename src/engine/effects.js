@@ -157,6 +157,26 @@
       const list = Array.isArray(eff.echo) ? eff.echo : [eff.echo];
       list.forEach((ec) => PG.events.scheduleEcho(state, ec));
     }
+    if (eff.cast && PG.cast) {
+      for (const [id, d] of Object.entries(eff.cast)) {
+        const r = PG.cast.change(state, id, d, eff.mem || null);
+        if (r) lines.push(r.name + ' (' + r.title.toLowerCase() + ') ' + U.fmtSigned(d, 0));
+      }
+    }
+    if (eff.replace && PG.cast) { const r = PG.cast.replace(state, eff.replace); if (r) lines.push(r); }
+    if (eff.partySeat && state.party) {
+      const ch = state.world.chambers.state_house || state.world.chambers.state_senate;
+      const m = ch && ch.members.filter((x) => x.party !== 'P' && !x.isPlayer).sort((a, b) => Math.abs(a.lean) - Math.abs(b.lean))[0];
+      if (m) { m.party = 'P'; m.econ = Math.round((m.econ + state.party.ideology.econ) / 2); m.social = Math.round((m.social + state.party.ideology.social) / 2); lines.push(m.name + ' now sits as a ' + state.party.name + ' member in the ' + ch.name); PG.world.setLeadership && PG.world.setLeadership(state, ch); }
+    }
+    if (eff.ballotLoss && state.party) {
+      const b = state.party.ballot[state.player.homeState];
+      if (b && b.status === 'qualified') { b.status = 'petitioning'; b.signatures = Math.round(b.required * 0.4); lines.push('Lost the ballot line in ' + PG.juris.homeState(state).name); }
+    }
+    if (eff.threat && state.gov) { state.gov.challenger = U.clamp((state.gov.challenger || 0) + eff.threat, -0.3, 0.6); lines.push('Primary threat ' + (eff.threat > 0 ? 'up' : 'down')); }
+    if (eff.gas) { const gs = state.world.national.gas; if (gs) { gs.shock += eff.gas; lines.push('Gas prices ' + (eff.gas > 0 ? 'up' : 'down')); } }
+    if (eff.arc && PG.arcs) { const inst = PG.arcs.start(state, eff.arc); if (inst) inst.due = U.monthIndex(state.date) + (eff.arcDelay || 3); }
+    if (eff.wire && PG.wire) PG.wire.post(state, { kind: 'story', text: eff.wire, tone: 0 });
     if (eff.log) PG.game.log(state, 'event', eff.log);
     return lines;
   }

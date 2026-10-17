@@ -35,6 +35,7 @@
     const errors = validate(state);
     if (errors.length) throw new Error('Invalid save: ' + errors.join(' '));
     if (state.party && PG.party) PG.party.sync(state);
+    if (PG.cast) PG.cast.ensure(state);
     return state;
   }
 

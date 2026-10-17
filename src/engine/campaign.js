@@ -132,9 +132,13 @@
       const stages = st.primary === 'top2' || st.primary === 'top4' || st.primary === 'jungle' ? null : ['primary', 'runoff', 'general', 'general_runoff'];
       if (incumbent && incumbent.party === party) {
         mk({ party, incumbent: true, name: incumbent.name, ideology: incumbent.ideology, fav: incumbent.approval ? incumbent.approval + 3 : undefined, stages: stages && ['primary', 'runoff', 'general', 'general_runoff'] });
-        if (party === myParty || R.chance(state, 0.25)) mk({ party, bias: party === myParty ? R.pick(state, ['base', 'moderate']) : 'base', qualityBonus: -10, stages: stages && ['primary', 'runoff'] });
+        const rv = party === myParty && PG.cast && PG.cast.rivalForRace(state, officeId);
+        if (rv) mk(Object.assign({ party, bias: 'mainstream', stages: stages && ['primary', 'runoff'] }, rv));
+        else if (party === myParty || R.chance(state, 0.25)) mk({ party, bias: party === myParty ? R.pick(state, ['base', 'moderate']) : 'base', qualityBonus: -10, stages: stages && ['primary', 'runoff'] });
       } else if (party === myParty) {
         let n = playerHolds ? (threat > 0.3 ? 1 : R.chance(state, 0.25) ? 1 : 0) : R.int(state, 1, 3);
+        const rv = PG.cast && PG.cast.rivalForRace(state, officeId);
+        if (rv) { mk(Object.assign({ party, bias: 'mainstream', stages: stages && ['primary', 'runoff'] }, rv)); n = Math.max(0, n - 1); }
         for (let i = 0; i < n; i++) mk({ party, bias: playerHolds ? 'base' : (i === 0 ? (PG.voters.dist(p.ideology, PG.voters.partyNorm(party)) > 30 ? 'mainstream' : 'moderate') : R.pick(state, ['base', 'moderate', 'mainstream'])), qualityBonus: playerHolds ? threat * 20 - 8 : 0, stages: stages && ['primary', 'runoff'] });
       } else {
         const n = R.int(state, 1, 3);
@@ -707,6 +711,8 @@
     const pc = playerCand(state);
     if (pc) state.player.cash = Math.max(0, pc.cash);
     state.player.legacy.elections.push({ office: PG.data.officeById[c.officeId].name, year: c.info.general.year, won, why, share: c.lastResult ? c.lastResult.playerShare : null });
+    const rc = c.candidates.find((x) => x.label === 'Your rival');
+    if (rc && PG.cast) PG.cast.rivalRaceOver(state, c.officeId, !won && rc.active, won);
     state.campaign = null;
     state.phase = state.player.office ? 'governing' : 'career';
     if (state.gov && state.gov.decision === 'pending') state.gov.decision = null;
@@ -718,7 +724,9 @@
     if (!PG.data.officeById[g.officeId].partisan) { g.primaryThreat = 0; return; }
     const base = g.approval.base;
     const disloyal = (g.defections || 0) / Math.max(1, g.voteRecord.length);
-    g.primaryThreat = U.round(U.clamp((60 - base) / 25 + disloyal * 1.5 + (state.player.partyRel < 35 ? 0.3 : 0), 0, 1), 2);
+    const act = state.cast ? state.cast.activist.rel : 0;
+    const organizer = act < -20 ? 0.25 : act > 40 ? -0.15 : 0;
+    g.primaryThreat = U.round(U.clamp((60 - base) / 25 + disloyal * 1.5 + (state.player.partyRel < 35 ? 0.3 : 0) + organizer + (g.challenger || 0), 0, 1), 2);
   }
 
   PG.campaign = {

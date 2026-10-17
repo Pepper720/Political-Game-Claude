@@ -24,6 +24,7 @@
     PG.groups.init(state);
     if (PG.courts) PG.courts.init(state);
     PG.economy.monthly(state);
+    PG.cast.ensure(state);
     log(state, 'career', state.player.name + ' begins a political career in ' + state.world.home.city.name + ', ' + PG.data.stateById[state.player.homeState].name + '.');
     return state;
   }
@@ -51,6 +52,8 @@
     const b = blockers(state);
     if (b) return { ok: false, msg: b };
     const p = state.player;
+    PG.cast.ensure(state);
+    PG.wire.monthly(state);
     if (state.mode === 'party') PG.party.monthly(state);
     if (state.campaign) PG.campaign.processMonth(state);
     if (state.gov) PG.gov.monthly(state, !!state.campaign);
@@ -66,11 +69,13 @@
       const exKey = state.gov.officeId === 'mayor' ? 'mayor' : state.gov.officeId;
       if (state.world.executives[exKey]) state.world.executives[exKey].approval = state.gov.approval.overall;
     }
+    PG.cast.monthly(state);
+    PG.wire.endOfMonth(state);
     state.date = U.addMonths(state.date, 1);
     state.stats.months++;
     if (state.date.month === 1 && state.date.year % 10 === 2 && state.world.lastRedistrict !== state.date.year) PG.world.redistrict(state);
     transitions(state);
-    if (state.phase !== 'gameover') PG.events.roll(state);
+    if (state.phase !== 'gameover') { PG.arcs.monthly(state); PG.events.roll(state); }
     return { ok: true };
   }
 
@@ -346,6 +351,7 @@
         case 'gov.hearing': return PG.leg.holdHearing(state, a.billId);
         case 'settings.difficulty': return setDifficulty(state, a.level);
         case 'party.act': return PG.party.act(state, a.kind, a.arg);
+        case 'phone.answer': return PG.cast.answer(state, a.uid, a.i);
         case 'gov.discharge': return PG.leg.discharge(state, a.billId);
         case 'gov.bury': return PG.leg.bury(state, a.billId);
         case 'gov.sign': return PG.leg.sign(state, a.billId);

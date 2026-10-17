@@ -18,7 +18,7 @@ function enactDirect(s, lawId, scope) {
 
 test('courts: a vulnerable law draws a lawsuit that moves trial → appeal → final ruling', () => {
   let filed = 0, finished = 0;
-  for (let i = 0; i < 12; i++) {
+  for (let i = 0; i < 30; i++) {
     const s = governor('court-' + i);
     const bill = enactDirect(s, 'assault_weapons_ban', 3);
     const cs = s.courts.cases.find((c) => c.target.id === bill.id);
@@ -33,7 +33,7 @@ test('courts: a vulnerable law draws a lawsuit that moves trial → appeal → f
     assert.equal(en.active, cs.status === 'upheld', 'law active iff upheld');
     assert.ok(cs.history.length >= 2);
   }
-  assert.ok(filed >= 6, 'most high-vulnerability laws are challenged: ' + filed + '/12');
+  assert.ok(filed >= 15, 'most high-vulnerability laws are challenged: ' + filed + '/30');
   assert.equal(filed, finished);
 });
 

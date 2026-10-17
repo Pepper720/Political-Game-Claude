@@ -148,6 +148,22 @@
         'Holdouts appear only on close votes for bills you back, at most three at a time, each with one demand.',
         'Personality effects are fixed modifiers from traits, background and stats rather than emergent behavior.',
       ] },
+    { title: 'Weird but real: things voters do',
+      real: [
+        'Gas prices weigh on incumbents even though no governor, mayor or legislator sets them; voters judge officeholders by conditions they experience.',
+        'Local sports results just before an election have been linked to small gains for incumbents (Healy, Malhotra & Mo, 2010). Later replications dispute the size of the effect, so the game keeps it small.',
+        'Voters have been found to punish incumbents for events nobody controls, such as droughts or shark attacks (Achen & Bartels). This is contested — Fowler & Hall (2018) argue the shark result is fragile — so it appears here as a storyline, not a rule.',
+        'Rain on Election Day lowers turnout (Gomez, Hansford & Krause, 2007); strong field operations lose less of their vote.',
+        'Voters reward disaster relief spending far more than disaster preparedness spending (Healy & Malhotra, 2009).',
+        'Ballot measures can raise turnout among the people who care most about them; candidates are pressed to take sides.',
+        'Politics runs on relationships: reporters, donors, party chairs, union and business leaders, organizers and staff remember how they were treated.',
+      ],
+      simplified: [
+        'The cast is one fictional person per role, with a single relationship score and a short memory.',
+        'Storylines are hand-written scenarios with branching chapters; real controversies are far messier and rarely end cleanly.',
+        'Relationship effects are fixed rules (press drift, scandal size, capital, donor money, primary threat), shown in the Rolodex.',
+        'Gas prices follow inflation plus occasional supply shocks; the home team\'s season is a simple win probability.',
+      ] },
     { title: 'Even-handedness',
       real: [
         'Policy effects reflect commonly argued tradeoffs on both sides: costs, benefits, legal risk, and who gains or loses.',

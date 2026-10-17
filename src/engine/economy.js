@@ -52,7 +52,8 @@
     const n = state.world.national.economy, loc = state.world.local;
     const g = level === 'federal' ? n.growth : (loc.growth !== undefined ? loc.growth : n.growth);
     const u = level === 'federal' ? n.unemployment : (loc.unemployment !== undefined ? loc.unemployment : n.unemployment);
-    return (g - 2) * 1.1 - (u - 4.5) * 1.2 - Math.max(0, n.inflation - 2.5) * 1.3;
+    const gas = state.world.national.gas ? state.world.national.gas.price : 3.3;
+    return (g - 2) * 1.1 - (u - 4.5) * 1.2 - Math.max(0, n.inflation - 2.5) * 1.3 - Math.max(0, gas - 3.6) * 1.4;
   }
 
   // ---------------------------------------------------------------- budgets

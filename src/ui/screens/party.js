@@ -16,7 +16,8 @@
     if (P.brand.nameRec < 20) tips.push('Almost nobody has heard of you. A media blitz or a convention raises name recognition.');
     if (P.funds < 20000) tips.push('Money is tight. A fundraising drive is the reliable way to refill the treasury.');
     if (g.date.month >= 9 && g.date.month <= 11) tips.push('Election in November ' + y + ' — last chance to fund candidates.');
-    return tips.slice(0, 4);
+    for (const [, t] of ui.peopleTips(g)) tips.push(t);
+    return tips.slice(0, 5);
   }
 
   ui.screens.hq = function (g) {
@@ -25,7 +26,7 @@
     const s = PG.party.strength(g);
     let h = '<div class="hero" style="--hero:' + esc(P.color) + '"><div><p class="eyebrow">Party headquarters</p><h1>' + esc(P.name) + '</h1><p>' + esc(st.name) + ' — ' + esc(st.desc) + '</p></div><div class="hero-stat"><b>' + Math.round(s * 100) + '</b><span>party strength</span></div></div>';
     const tips = nextSteps(g);
-    if (tips.length) h += '<div class="card brief"><h3>💡 What to do next</h3><ul>' + tips.map((t) => '<li>' + esc(t) + '</li>').join('') + '</ul></div>';
+    if (tips.length) h += '<div class="card brief">' + ui.memoHeader(g, 'What to do next') + '<ul>' + tips.map((t) => '<li>' + esc(t) + '</li>').join('') + '</ul></div>';
     h += '<div class="grid g4">' + ui.kpi('Treasury', U.fmtMoney(P.funds), 'Dues bring in ~' + U.fmtMoney(P.lastDues || 0) + '/mo') + ui.kpi('Members', P.members.toLocaleString()) + ui.kpi('Name recognition', Math.round(P.brand.nameRec) + '%') + ui.kpi('Favorability', Math.round(P.brand.fav) + '%') +
       ui.kpi('Seats held', PG.party.totalSeats(g)) + ui.kpi('Ballot lines', Object.values(P.ballot).filter((b) => b.status === 'qualified').length + ' / 51') + ui.kpi('Last avg. vote', P.lastShare ? ui.pct(P.lastShare) : '—') + ui.kpi('Leadership actions', P.actionsLeft + ' left') + '</div>';
     h += '<div class="card"><h3>Why voters hesitate</h3><p class="small">New parties face the <b>wasted-vote problem</b>: even voters who like you fear helping the major party they dislike most. Your strength (' + Math.round(s * 100) + '/100) combines name recognition, recent vote share and seats held; as it rises, the penalty shrinks. ' + ui.bar(s) + '</p></div>';

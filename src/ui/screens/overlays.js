@@ -6,10 +6,23 @@
   ui.screens.eventModal = function (g) {
     const v = PG.events.view(g);
     if (!v) return '';
+    if (v.arc) return storyModal(g, v);
     return '<div class="overlay" role="dialog" aria-modal="true"><div class="modal"><p class="small muted">' + U.fmtDate(g.date) + '</p><h2>' + esc(v.title) + '</h2><p>' + esc(v.text) + '</p>' +
       v.choices.map((c) => '<button class="choice" data-act="' + ui.attr({ type: 'event.choose', i: c.i }) + '"' + (c.ok ? '' : ' disabled') + '><b>' + esc(c.label) + '</b><span>' + esc(c.hint) + '</span></button>').join('') +
       '<p class="small muted">No option is free. Consequences may surface months from now.</p></div></div>';
   };
+
+  // A storyline chapter: who is in the room, what happened before, and the call you make.
+  function storyModal(g, v) {
+    let h = '<div class="overlay" role="dialog" aria-modal="true"><div class="modal story-modal">';
+    h += '<p class="eyebrow">' + v.icon + ' Storyline · ' + esc(v.storyTitle) + ' · Chapter ' + v.chapter + ' · ' + esc(U.fmtDate(g.date)) + '</p><h2>' + esc(v.title) + '</h2>';
+    if (v.speaker) h += '<div class="speaker">' + ui.avatar(v.speaker.name, v.speaker.icon) + '<div><b>' + esc(v.speaker.name) + '</b> <span class="small muted">' + esc(v.speaker.title) + '</span> ' + ui.relChip(v.speaker.rel) + '<br><span class="small muted"><i>' + esc(U.cap(v.speaker.quirk)) + '.</i></span></div></div>';
+    h += '<blockquote class="said">' + esc(v.text) + '</blockquote>';
+    if (v.previously.length) h += '<details class="box"><summary class="small">Previously in this story</summary><ul class="why">' + v.previously.map((t) => '<li>' + esc(t) + '</li>').join('') + '</ul></details>';
+    h += v.choices.map((c) => '<button class="choice" data-act="' + ui.attr({ type: 'event.choose', i: c.i }) + '"' + (c.ok ? '' : ' disabled') + '><b>' + esc(c.label) + '</b><span>' + esc(c.hint || '') + '</span></button>').join('');
+    h += '<p class="small muted">This story continues. What you decide now shapes which chapter comes next — and who remembers it.</p></div></div>';
+    return h;
+  }
 
   // ------------------------------------------------------------- election night
   ui.startNight = function () {

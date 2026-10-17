@@ -97,7 +97,7 @@
 
   // ------------------------------------------------------------- layout
   const TAB_ICON = { campaign: '📣', race: '🏁', polls: '📊', money: '💰', voters: '👥', map: '🗺️', office: '🏛️', legislature: '📜', budget: '🧾', executive: '🖋️',
-    groups: '🤝', courts: '⚖️', career: '🪜', world: '🌎', profile: '👤', log: '📰', settings: '⚙️', reality: '❓', hq: '🏴', races: '🗳️', pmap: '🗺️', presults: '🏆' };
+    groups: '🤝', courts: '⚖️', career: '🪜', world: '🌎', profile: '👤', log: '📰', settings: '⚙️', reality: '❓', hq: '🏴', races: '🗳️', pmap: '🗺️', presults: '🏆', people: '📱' };
   ui.TAB_ICON = TAB_ICON;
 
   function tabsFor(g) {
@@ -106,6 +106,7 @@
     if (g.mode === 'party') {
       t.push(['hq', 'Party HQ'], ['races', 'Races & candidates'], ['pmap', 'Ballot map'], ['presults', 'Results']);
       badge.hq = g.party.actionsLeft > 0 ? g.party.actionsLeft : 0;
+      t.push(['people', 'People']); badge.people = (g.inbox || []).length;
       t.push(['world', 'World'], ['profile', 'Chair profile'], ['log', 'Log & news'], ['settings', 'Save & settings'], ['reality', 'How it works']);
       return { tabs: t, badge };
     }
@@ -130,6 +131,7 @@
       if (g.courts) badge.courts = (g.courts.vacancies || []).filter((v) => v.playerAppoints).length;
     }
     if (!g.campaign) t.unshift(['career', 'Career']);
+    t.push(['people', 'People']); badge.people = (g.inbox || []).length;
     t.push(['world', 'World'], ['profile', 'Profile'], ['log', 'Log & news'], ['settings', 'Save & settings'], ['reality', 'How it works']);
     return { tabs: t, badge };
   }
@@ -169,7 +171,7 @@
       'Environment: <b>' + U.fmtLean(n.environment) + '</b> <span class="muted">(generic ballot)</span><br>' +
       'Growth ' + e.growth.toFixed(1) + '% · Unemployment ' + e.unemployment.toFixed(1) + '% · Inflation ' + e.inflation.toFixed(1) + '%' + (e.recession ? ' · <b class="bad">Recession</b>' : '') + '</div></div>';
     h += '<div class="card flat"><h4>What just happened</h4>' + ui.logList(g.log, 8) + '</div>';
-    h += '<div class="card flat"><h4>Headlines</h4><ul class="log">' + g.news.slice(0, 5).map((x) => '<li><div class="when">' + U.fmtShortDate(x.date) + ' · ' + esc(x.outlet || '') + '</div>' + esc(x.headline) + '</li>').join('') + '</ul></div>';
+    h += '<div class="card flat"><h4>📰 The Wire</h4>' + ui.wireList(g, 6) + '<button class="small linkish" data-cmd="wireMore">More chatter ›</button></div>';
     return h;
   }
 

@@ -240,7 +240,8 @@
     const n = state.world.national;
     const p = state.world.executives.president;
     const econ = n.economy;
-    const econScore = (econ.growth - 2) * 1.2 - (econ.unemployment - 4.5) * 1.0 - Math.max(0, econ.inflation - 2.5) * 1.1;
+    const gas = n.gas ? n.gas.price : 3.3;
+    const econScore = (econ.growth - 2) * 1.2 - (econ.unemployment - 4.5) * 1.0 - Math.max(0, econ.inflation - 2.5) * 1.1 - Math.max(0, gas - 3.6) * 1.2;
     const presStanding = (p.approval - 47) * 0.35 + econScore * 0.6;
     const sign = p.party === 'D' ? -1 : p.party === 'R' ? 1 : 0; // good standing helps the president's party
     const year = state.date.year;

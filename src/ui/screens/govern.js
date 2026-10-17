@@ -58,8 +58,9 @@
     if (g.courts && g.courts.cases.some((c) => c.status === 'pending' && c.injunction)) tips.push(['⚖️', 'A court has blocked one of your policies — see Courts.']);
     if (!PG.leg.activeBills(g).some((b) => b.playerStance > 0) && p.capital >= 4) tips.push(['💡', 'You have ' + Math.round(p.capital) + ' capital and nothing moving. Introduce or back a bill.']);
     if (gv.approval.base < 45 && PG.data.officeById[gv.officeId].partisan) tips.push(['⚠️', 'Your base is restless (' + Math.round(gv.approval.base) + '%). A primary challenge is brewing.']);
+    tips.push.apply(tips, ui.peopleTips(g));
     if (!tips.length) tips.push(['✅', 'Nothing urgent. Use your personal actions, build relationships, or bank capital for a big push.']);
-    return '<div class="card brief"><h3>This month</h3><ul class="icons">' + tips.slice(0, 5).map(([i, t]) => '<li><span aria-hidden="true">' + i + '</span>' + esc(t) + '</li>').join('') + '</ul></div>';
+    return '<div class="card brief">' + ui.memoHeader(g, 'Morning memo') + '<ul class="icons">' + tips.slice(0, 6).map(([i, t]) => '<li><span aria-hidden="true">' + i + '</span>' + esc(t) + '</li>').join('') + '</ul></div>';
   }
   ui.govBriefing = briefing;
 

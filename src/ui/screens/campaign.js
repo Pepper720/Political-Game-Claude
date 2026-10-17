@@ -113,7 +113,10 @@
     if (deb) tips.push(['🎤', deb.label + ' is coming up — prep days help.']);
     if (!c.rolloutThisMonth && (c.plan.days.policy || 0) >= 2) tips.push(['📜', 'You scheduled policy days: roll out a plan below to win over voters who agree.']);
     if (c.oppoFile.some((x) => !x.released)) tips.push(['🗂️', 'Your opposition file has unreleased material.']);
-    return '<div class="card brief"><h3>Campaign briefing</h3><ul class="icons">' + tips.slice(0, 5).map(([i, t]) => '<li><span aria-hidden="true">' + i + '</span>' + esc(t) + '</li>').join('') + '</ul></div>';
+    const rv = c.candidates.find((x) => x.label === 'Your rival' && x.active);
+    if (rv) tips.unshift(['⚔️', 'Your old rival ' + rv.name + ' is in this race. This one is personal.']);
+    tips.push.apply(tips, ui.peopleTips(g));
+    return '<div class="card brief">' + ui.memoHeader(g, 'Campaign briefing') + '<ul class="icons">' + tips.slice(0, 6).map(([i, t]) => '<li><span aria-hidden="true">' + i + '</span>' + esc(t) + '</li>').join('') + '</ul></div>';
   }
 
   function debatesNote(g) {

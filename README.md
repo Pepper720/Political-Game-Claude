@@ -62,6 +62,36 @@ export a `.json` save file or import one.
   finally *Major party*; an election-night report shows every race you contested. Expect
   a long climb — first seats usually take several cycles.
 
+### A living political world
+
+You are never alone in the room. Every game generates a **cast** of recurring,
+fictional people: chief of staff, communications director, an old-hand consultant, a
+pollster, a beat reporter, an investigative reporter, a mega-donor, the county party
+boss, a union president, the chamber of commerce head, a grassroots organizer, a
+community faith leader, your mentor — and a **rival** who climbs the ladder alongside
+you and will show up in your primary if you both want the same seat. Each has a quirk,
+a relationship with you, and a memory of what you did. Relationships do things: your
+press relations drift toward the beat reporter's view of you, hostile reporters make
+scandals bigger, a loyal chief banks capital, disloyal staff leak, a warm donor bundles
+checks, an angry organizer feeds a primary challenge.
+
+- **Storylines** (`data/arcs.js`) unfold over months or years: a plant closing that ends
+  as a power-hungry data center raising everyone's electric bill, a lead-pipe report you
+  could sit on, a stadium ultimatum, an investigative reporter pulling a thread, a storm
+  whose rebuild decision is tested by the *next* storm, a crypto donor, a viral clip, a
+  primary challenger, the boss's price for clearing your field, a pothole named Gary.
+  Choices set story variables and decide which chapter comes next; the People tab shows
+  every chapter you lived through.
+- **The phone**: small asks arrive between months (dinner with the donor, a picket line,
+  a pledge, a vigil). They never block the game, but they expire — and silence is also
+  an answer.
+- **The Wire**: social posts from fictional accounts, overheard gossip and cast quotes
+  reacting to what is actually happening — from every side.
+- **Weird but real**: gas prices drag on incumbents who don't control them; the home
+  team's rivalry game right before Election Day nudges incumbents; election-day rain
+  rewards the stronger field operation; shark bites hurt beach-town incumbents. Each is
+  logged with the research behind it (and its caveats) on the How it works page.
+
 ### Governing is a fight
 
 Bills now pass through visible stages (introduced → committee → floor → other chamber →
@@ -174,6 +204,19 @@ Everything below is plain data; no engine changes needed.
   `{party}` is the party's name in text.
 
 `node tests/run.js data` validates group, bloc, outcome and echo references.
+
+### Add a storyline — `data/arcs.js`
+
+A storyline is a set of chapters. Each chapter has a speaker (a cast role), text, and
+choices; a choice can apply effects, change relationships (`cast: { reporter: 6 }`),
+set story variables (`set: { deal: 'buyer' }`), and pick the next chapter — directly,
+after a delay (`{ stage, months: [3, 6] }`), or by a weighted roll shaped by your
+situation (`{ roll: [{ stage, w, mods: [{ if: 'presSameParty', w: 0.5 }] }] }`). Conditions
+use the names in `PG.arcs.PRED` (e.g. `governing`, `coastal`, `lowLoyalty`), `{ var }`,
+`{ cast }`, `{ flag }`, `{ any }` and `{ not }`. The header of `data/arcs.js` documents
+every field, and `tests/living.test.js` plays every storyline to an ending.
+Phone asks live in `data/cast.js`; Wire chatter in `data/wire.js`. Extra effect keys:
+`cast`, `mem`, `threat`, `gas`, `arc`, `replace`, `partySeat`, `ballotLoss`.
 
 ### Add a law — `data/laws.js`
 

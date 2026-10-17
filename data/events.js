@@ -781,6 +781,25 @@
         { label: 'Own it: "I\'ve grown"', hint: 'Humanizing; some damage', effects: { fav: -1, approval: { all: -0.8 }, media: 1 } },
         { label: 'Refuse to discuss it', hint: 'Story lingers', effects: { scandal: { severity: 2, text: 'Old episode resurfaces' } } },
       ] },
+    // Long-tail consequences scheduled by phone calls and storylines.
+    { id: 'nephew_trouble', echoOnly: true, title: 'The nephew',
+      text: '{donor}\'s nephew — the one you hired — posted a photo from inside a closed-door budget meeting with the caption "boring lol." The draft numbers are legible.',
+      choices: [
+        { label: 'Let the nephew go', hint: '{donor} will be hurt', effects: { media: 1, cast: { donor: -12 }, mem: 'fired the nephew' } },
+        { label: 'Laugh it off', hint: 'The numbers are out now', effects: { scandal: { severity: 1.5, text: 'Intern leaks draft budget on social media' }, cast: { donor: 4 } } },
+      ] },
+    { id: 'records_story', echoOnly: true, title: 'The calendar story',
+      text: '{investigator} got your office calendar through a records appeal. The story lists every meeting with donors and lobbyists, with times. One lunch lasted four hours.',
+      choices: [
+        { label: 'Publish your calendars going forward', hint: 'Transparency', effects: { groups: { reform: 6 }, media: 2, cast: { investigator: 6 } } },
+        { label: 'Defend the meetings', hint: 'Story lingers', effects: { scandal: { severity: 2.5, text: 'Office calendar shows heavy donor access' } } },
+      ] },
+    { id: 'lead_report_leak', echoOnly: true, title: 'The filing cabinet',
+      text: 'Years later, the first lead-testing report — the one you never released — turns up in a lawsuit. {investigator} has a copy and a timeline.',
+      choices: [
+        { label: 'Come clean now', hint: 'Painful', effects: { scandal: { severity: 3.5, text: 'Unreleased lead report surfaces' }, media: 2 } },
+        { label: 'Blame the old utility director', hint: 'Might work; might not', chance: { p: 0.4, success: { approval: { all: -0.5 }, outcome: 'The director takes the fall.' }, fail: { scandal: { severity: 6, text: 'Concealed lead test results' }, outcome: 'Your initials are on the memo.' } } },
+      ] },
   ];
   PG.data.eventById = Object.fromEntries(PG.data.events.map((e) => [e.id, e]));
 })(globalThis.PG = globalThis.PG || {});
